@@ -1,0 +1,78 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<LangVersion>13</LangVersion>
+		<TargetFrameworks>netstandard2.1</TargetFrameworks>
+		<Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+	</PropertyGroup>
+
+	<!--<PropertyGroup>
+		<Obfuscate>true</Obfuscate>
+		<ObfuscationPreset>maximum</ObfuscationPreset>
+		<ObfuscationConfig>obfuscar.xml</ObfuscationConfig>
+	</PropertyGroup>
+	
+	<Target Name="Obfuscate" AfterTargets="Build">
+		<PropertyGroup>
+			<ObfuscarPath>$(NuGetPackageRoot)obfuscar\2.2.49\tools\Obfuscar.Console.exe</ObfuscarPath>
+			<ObfuscationConfigPath>$(ProjectDir)$(ObfuscationConfig)</ObfuscationConfigPath>
+		</PropertyGroup>
+		<Message Text="Obfuscating $(TargetPath) using $(ObfuscationConfigPath)" Importance="high" />
+		<Exec Command="&quot;$(ObfuscarPath)&quot; &quot;$(ObfuscationConfigPath)&quot;" WorkingDirectory="$(ProjectDir)bin\Debug\netstandard2.1" IgnoreExitCode="false" />
+		<Message Text="Obfuscation completed. Output: bin\Obfuscated\" Importance="high" />
+	</Target>-->
+	
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<DebugType>embedded</DebugType>
+		<Optimize>True</Optimize>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<DebugType>embedded</DebugType>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="DBHelpers\DBHelper.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Costura.Fody" Version="6.0.0" />
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+		<PackageReference Include="MySql.Data" Version="9.4.0" />
+		<PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.9.1" />
+		<PackageReference Include="System.Drawing.Common" Version="9.0.9" />
+		<PackageReference Include="Topshelf.Log4Net" Version="4.3.0" />
+		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.9" />
+		<PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
+		<PackageReference Include="Npgsql" Version="8.0.7" />
+		<!--<PackageReference Include="Obfuscar" Version="2.2.49">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>-->
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="Properties\Resources.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>Resources.resx</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="Properties\Resources.resx">
+	    <Generator>PublicResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="obfuscar.xml">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
+</Project>

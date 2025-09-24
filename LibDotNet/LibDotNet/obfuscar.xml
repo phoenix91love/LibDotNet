@@ -1,0 +1,40 @@
+﻿<?xml version='1.0'?>
+<Obfuscator>
+	<Var name="InPath" value=".\" />
+	<Var name="OutPath" value=".\obfuscated" />
+	
+	<!-- Renaming Options -->
+	<Var name="HidePrivateApi" value="true" />
+	<Var name="RenameProperties" value="true" />
+	<Var name="RenameEvents" value="true" />
+	<Var name="RenameFields" value="true" />
+	<Var name="RenameParameters" value="true" />
+	<Var name="UseUnicodeNames" value="true" />
+	<Var name="UseKoreanNames" value="false" />
+	<Var name="ReuseNames" value="true" />
+	<Var name="KeepPublicApi" value="true" />
+	<Var name="HideStrings" value="true" />
+
+	<!-- Control Flow Obfuscation -->
+	<Var name="ControlFlow" value="true" />
+	<Var name="ControlFlowProbability" value="50" />
+	<Var name="ControlFlowMaxIterations" value="5" />
+
+	<!-- String Encryption -->
+	<Var name="StringEncryption" value="true" />
+	<Var name="StringEncryptionPassword" value="YourCustomPassword123!" />
+	<Var name="StringEncryptionAlgorithm" value="AES" />
+
+	<!-- Anti-Debug & Anti-Tamper -->
+	<Var name="AntiDebug" value="true" />
+	<Var name="AntiTamper" value="true" />
+	<Var name="AntiIlDasm" value="true" />
+
+	<!-- Metadata Reduction -->
+	<Var name="RegenerateDebugInfo" value="false" />
+	<Var name="RemoveConstants" value="true" />
+	<Var name="Compress" value="true" />
+	
+	<Module file="LibDotNet.dll">
+	</Module>
+</Obfuscator>
