@@ -1,5 +1,7 @@
-﻿using System;
+﻿using DapperCoreLib;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace LibDotNet.DBHelpers
@@ -14,6 +16,7 @@ namespace LibDotNet.DBHelpers
     public abstract class DatabaseTypeBase
     {
         public abstract DatabaseTypes Type { get; }
+       
     }
 
     public class DatabaseSqlServer : DatabaseTypeBase
@@ -31,7 +34,7 @@ namespace LibDotNet.DBHelpers
         public override DatabaseTypes Type => DatabaseTypes.PostgreSql;
     }
 
-    public class OracleDatabase : DatabaseTypeBase
+    public class DatabaseOracle : DatabaseTypeBase
     {
         public override DatabaseTypes Type => DatabaseTypes.Oracle;
     }

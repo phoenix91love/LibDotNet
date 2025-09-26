@@ -12,12 +12,13 @@ namespace Libs.Helpers
 {
     public static class ObjectHelpers
     {
-        public static DataTable ToDataTable<T>(this IEnumerable<T> Linqlist)
+
+        public static DataTable? ToDataTable<T>(this IEnumerable<T> Linqlist)
         {
             try
             {
                 DataTable dt = new DataTable();
-                PropertyInfo[] columns = null;
+                PropertyInfo[]? columns = null;
                 if (Linqlist == null) return dt;
                 foreach (T Record in Linqlist)
                 {
