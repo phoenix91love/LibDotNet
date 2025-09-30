@@ -1,4 +1,6 @@
 ﻿using LibDotNet.DBHelpers;
+using LibDotNet.Helper;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Test
@@ -7,23 +9,27 @@ namespace Test
     {
         static async Task Main(string[] args)
         {
+            
             const string sqlServerConn = "Server=.;Database=Test;Trusted_Connection=true;";
-
-             string connectionOracle = "Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=192.168.1.99)(PORT=1528))(CONNECT_DATA=(SERVICE_NAME=DATATEST)));User Id=system;Password=admin123;";
+            LogWriters<Program>.Info(sqlServerConn);
+            LogWriters<regions>.Info(sqlServerConn);
+            LogWriters<Program>.Info(sqlServerConn);
+            LogWriters<regions>.Info(sqlServerConn);
+            string connectionOracle = "Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=192.168.1.99)(PORT=1528))(CONNECT_DATA=(SERVICE_NAME=DATATEST)));User Id=system;Password=admin123;";
             // Query đơn giản
             try
             {
                 var users = await DatabaseAccess<DatabaseOracle>
-                .QueryAsync<regions>(connectionOracle, "GetRegion");
+                .QueryAsync<regions, regions, regions>(connectionOracle, "USERSAPAPP.GetRegion");
             }
             catch (System.Exception ex)
             {
 
-                
-            }
-            
 
-          
+            }
+
+
+
             // Query với stored procedure
             //var user = await DatabaseAccess<DatabaseMySql>
             //    .QueryFirstOrDefaultAsync<User>(sqlServerConn, "sp_GetUserById",
@@ -56,6 +62,6 @@ namespace Test
     {
         public int Region_id { get; set; }
         public string region_name { get; set; }
-      
+
     }
 }

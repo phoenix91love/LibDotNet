@@ -14,7 +14,7 @@ namespace DapperCoreLib
 
             internal Identity(string sql, CommandType? commandType, string connectionString, Type type, Type? parametersType, int gridIndex = 0)
                 : base(sql, commandType, connectionString, type, parametersType, s_typeHash, gridIndex)
-            {}
+            { }
             internal Identity(string sql, CommandType? commandType, IDbConnection connection, Type type, Type? parametersType, int gridIndex = 0)
                 : base(sql, commandType, connection.ConnectionString, type, parametersType, s_typeHash, gridIndex)
             { }
@@ -25,7 +25,7 @@ namespace DapperCoreLib
                 int count = 0;
                 bool Map<T>()
                 {
-                    if(typeof(T) != typeof(DontMap))
+                    if (typeof(T) != typeof(DontMap))
                     {
                         count++;
                         hashCodeLocal = (hashCodeLocal * 23) + (typeof(T).GetHashCode());
@@ -40,7 +40,8 @@ namespace DapperCoreLib
                 return count;
             }
             internal override int TypeCount => s_typeCount;
-            internal override Type GetType(int index) => index switch {
+            internal override Type GetType(int index) => index switch
+            {
                 0 => typeof(TFirst),
                 1 => typeof(TSecond),
                 2 => typeof(TThird),
@@ -272,7 +273,7 @@ namespace DapperCoreLib
             private static bool TypesEqual(Identity x, Identity y, int count)
             {
                 if (y.TypeCount != count) return false;
-                for(int i = 0; i < count; i++)
+                for (int i = 0; i < count; i++)
                 {
                     if (x.GetType(i) != y.GetType(i))
                         return false;

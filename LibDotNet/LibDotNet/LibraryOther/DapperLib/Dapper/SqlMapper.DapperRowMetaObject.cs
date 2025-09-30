@@ -91,7 +91,7 @@ namespace DapperCoreLib
 
             public override IEnumerable<string> GetDynamicMemberNames()
             {
-                if(HasValue && Value is IDictionary<string, object> lookup) return lookup.Keys;
+                if (HasValue && Value is IDictionary<string, object> lookup) return lookup.Keys;
                 return Array.Empty<string>();
             }
         }

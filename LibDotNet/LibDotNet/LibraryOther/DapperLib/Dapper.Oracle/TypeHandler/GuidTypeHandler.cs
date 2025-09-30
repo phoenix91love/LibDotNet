@@ -22,6 +22,6 @@ namespace DapperCoreLib
             }
 
             throw new NotImplementedException($"Dont know how to convert a {value.GetType().Name} to a System.Guid.");
-        }              
+        }
     }
 }

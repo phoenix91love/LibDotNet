@@ -1,10 +1,8 @@
-﻿using DapperCoreLib;
-using Oracle.ManagedDataAccess.Client;
+﻿using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace DapperCoreLib
 {

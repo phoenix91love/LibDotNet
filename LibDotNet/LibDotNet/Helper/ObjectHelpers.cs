@@ -12,7 +12,6 @@ namespace Libs.Helpers
 {
     public static class ObjectHelpers
     {
-
         public static DataTable? ToDataTable<T>(this IEnumerable<T> Linqlist)
         {
             try
@@ -45,7 +44,7 @@ namespace Libs.Helpers
             }
             catch (Exception ex)
             {
-                SingletonProvider<LogWriter>.Instance.WriterLogInfo($"ToDataTable exception", ex);
+                //SingletonProvider<LogWriter>.Instance.WriterLogInfo($"ToDataTable exception", ex);
                 return default(DataTable);
             }
 
@@ -53,7 +52,7 @@ namespace Libs.Helpers
 
         public static void InitFunction(Action func, string functionname)
         {
-            SingletonProvider<LogWriter>.Instance.WriterLogInfo($"Start {func.Target.ToString()} {functionname}");
+            //SingletonProvider<LogWriter>.Instance.WriterLogInfo($"Start {func.Target.ToString()} {functionname}");
             Task.Run(func);
         }
 
@@ -146,7 +145,7 @@ namespace Libs.Helpers
             }
             catch (Exception ex)
             {
-                SingletonProvider<LogWriter>.Instance.WriterLogInfo($"ConvertStringToIntervalTimer exception", ex);
+                //SingletonProvider<LogWriter>.Instance.WriterLogInfo($"ConvertStringToIntervalTimer exception", ex);
             }
             return time;
         }
@@ -168,7 +167,6 @@ namespace Libs.Helpers
         public static DateTime GetTimeUnix(int second = 0) => ObjectHelpers.START_UNIX_TIME.AddSeconds((double)second);
 
 
-
         public static string FirstLetterToUpper(this string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -176,7 +174,7 @@ namespace Libs.Helpers
             return str.Length > 1 ? char.ToUpper(str[0]).ToString() + str.Substring(1) : str.ToUpper();
         }
 
-        public static string Encrypt(this string toEncrypt, bool useHashing = true, string haskey = null)
+        public static string Encrypt(this string toEncrypt, bool useHashing = true, string? haskey = null)
         {
             try
             {
@@ -201,12 +199,12 @@ namespace Libs.Helpers
             }
             catch (Exception ex)
             {
-                SingletonProvider<LogWriter>.Instance.WriterLogInfo($"Encrypt exception", ex);
+                // SingletonProvider<LogWriter>.Instance.WriterLogInfo($"Encrypt exception", ex);
                 return string.Empty;
             }
         }
 
-        public static string Decrypt(this string cipherString, bool useHashing = true, string haskey = null)
+        public static string Decrypt(this string cipherString, bool useHashing = true, string? haskey = null)
         {
             try
             {
@@ -231,7 +229,8 @@ namespace Libs.Helpers
             }
             catch (Exception ex)
             {
-                SingletonProvider<LogWriter>.Instance.WriterLogInfo($"Encrypt exception", ex);
+                //SingletonProvider<LogWriter>.Instance.WriterLogInfo($"Encrypt exception", ex);
+
                 return string.Empty;
             }
 

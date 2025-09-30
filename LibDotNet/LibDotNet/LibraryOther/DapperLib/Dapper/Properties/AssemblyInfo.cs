@@ -4,15 +4,15 @@
 namespace System.Runtime.CompilerServices
 {
     [AttributeUsage(AttributeTargets.Module | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Interface, Inherited = false)]
-    internal sealed class SkipLocalsInitAttribute : Attribute {}
+    internal sealed class SkipLocalsInitAttribute : Attribute { }
 }
 namespace System.Diagnostics.CodeAnalysis
 {
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
     internal sealed class MemberNotNullAttribute : Attribute
     {
-        public MemberNotNullAttribute(string member) {}
-        public MemberNotNullAttribute(params string[] members) {}
+        public MemberNotNullAttribute(string member) { }
+        public MemberNotNullAttribute(params string[] members) { }
     }
 }
 

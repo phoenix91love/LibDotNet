@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data.Common;
-using System.Linq;
-using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 
 namespace DapperCoreLib
@@ -82,7 +78,7 @@ namespace DapperCoreLib
                     if (oraDate != null)
                     {
                         var isOraDateValNull = (bool)oraDate?.GetType()?.GetProperty("IsNull")?.GetValue(oraDate, null);
-                        if(!isOraDateValNull)
+                        if (!isOraDateValNull)
                         {
                             dateArray[i] = (DateTime?)oraDate?.GetType()?.GetProperty("Value")?.GetValue(oraDate, null);
                         }

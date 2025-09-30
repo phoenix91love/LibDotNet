@@ -21,7 +21,7 @@ namespace Libs.ProcessServices
             {
                 try
                 {
-                   // SingletonProvider<LogWriter>.Instance.WriterLogInfo($"ProcessRunner Start {process.ProcessName}");
+                    // SingletonProvider<LogWriter>.Instance.WriterLogInfo($"ProcessRunner Start {process.ProcessName}");
                     Task.Run(process.ProcessInit, _cts.Token);
                 }
                 catch (Exception ex)
@@ -41,7 +41,7 @@ namespace Libs.ProcessServices
 
     public class ProcessServiceCore : IProcessService
     {
-       // protected IDatabaseServer database = null;
+        // protected IDatabaseServer database = null;
         protected string ConnectionString { get; set; } = string.Empty;
         public string ProcessName => this.GetType().Name;
         public virtual void ProcessInit() { }

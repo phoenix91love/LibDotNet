@@ -1,7 +1,6 @@
 ﻿using DapperCoreLib;
 using Microsoft.Data.SqlClient;
 using MySql.Data.MySqlClient;
-using MySqlX.XDevAPI.Common;
 using Npgsql;
 using Oracle.ManagedDataAccess.Client;
 using System;
@@ -32,15 +31,13 @@ namespace LibDotNet.DBHelpers
                 _ => throw new ArgumentException($"Unsupported database type: {dbType}")
             };
         }
+
         private static bool HasRefCursorParameter(object? parameters)
         {
-            if (parameters is OracleDynamicParameters dynamicParams)
-            {
-                // Kiểm tra xem đã có ref cursor parameter chưa
-                return dynamicParams.ParameterNames.Any(name =>
-                    name.ToLower().Contains("cursor") || name.ToLower().Contains("result"));
-            }
-            return false;
+            if (parameters is not OracleDynamicParameters dynamicParams)
+                return false;
+            return dynamicParams.ParameterNames.Any(name =>
+                name.ToLower().Contains("cursor"));
         }
         public static async Task<IEnumerable<TResult>> QueryAsync<TResult>(string connectionString, string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
         {
@@ -60,12 +57,34 @@ namespace LibDotNet.DBHelpers
                 else
                     return await connection.QueryAsync<TResult>(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
             }
-            catch 
+            catch
             {
                 throw;
             }
         }
+        public static async Task<IEnumerable<TResult>> QueryAsync<TResult>(string connectionString, string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure, string[]? cusor = null)
+        {
+            try
+            {
+                await using var connection = CreateConnection(connectionString);
+                await connection.OpenAsync();
+                var dbType = new T().Type;
+                if (new T().Type == DatabaseTypes.Oracle)
+                {
+                    var dynamicParameters = new OracleDynamicParameters(parameters);
+                    if (!HasRefCursorParameter(parameters))
+                        dynamicParameters.Add(name: ":v_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
+                    return await connection.QueryAsync<TResult>(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
+                }
+                else
+                    return await connection.QueryAsync<TResult>(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
+            }
+            catch
+            {
+                throw;
+            }
+        }
         public static async Task<TResult?> QueryFirstOrDefaultAsync<TResult>(string connectionString, string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
         {
             try
@@ -169,7 +188,7 @@ namespace LibDotNet.DBHelpers
             return await connection.ExecuteAsync(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
         }
 
-        public static async Task<(IEnumerable<T1>, IEnumerable<T2>)> QueryMultipleAsync<T1, T2>(string connectionString, string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
+        public static async Task<(IEnumerable<T1>, IEnumerable<T2>)> QueryAsync<T1, T2>(string connectionString, string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
         {
             try
             {
@@ -205,7 +224,7 @@ namespace LibDotNet.DBHelpers
             }
         }
 
-        public static async Task<(IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>)> QueryMultipleAsync<T1, T2, T3>(string connectionString, string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
+        public static async Task<(IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>)> QueryAsync<T1, T2, T3>(string connectionString, string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
         {
             try
             {
@@ -219,7 +238,7 @@ namespace LibDotNet.DBHelpers
                     dynamicParameters.Add(name: ":v_cursor2", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
                     dynamicParameters.Add(name: ":v_cursor3", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
-                    using var gridReaderOracle = await connection.QueryMultipleAsync(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
+                    using var gridReaderOracle = await connection.QueryMultipleAsync(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
 
                     var result1 = await gridReaderOracle.ReadAsync<T1>();
                     var result2 = await gridReaderOracle.ReadAsync<T2>();
@@ -244,7 +263,7 @@ namespace LibDotNet.DBHelpers
 
         }
 
-        public static async Task<(IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>)> QueryMultipleAsync<T1, T2, T3, T4>(string connectionString, string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
+        public static async Task<(IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>)> QueryAsync<T1, T2, T3, T4>(string connectionString, string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
         {
             try
             {
@@ -285,7 +304,7 @@ namespace LibDotNet.DBHelpers
             }
         }
 
-        public static async Task<(IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>)> QueryMultipleAsync<T1, T2, T3, T4, T5>(string connectionString, string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
+        public static async Task<(IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>)> QueryAsync<T1, T2, T3, T4, T5>(string connectionString, string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
         {
             try
             {

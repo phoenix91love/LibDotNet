@@ -89,5 +89,15 @@ namespace LibDotNet.Properties {
                 return ((byte[])(obj));
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        public static byte[] nlog {
+            get {
+                object obj = ResourceManager.GetObject("nlog", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }

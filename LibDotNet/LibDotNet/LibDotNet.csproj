@@ -40,6 +40,7 @@
 		<PackageReference Include="Costura.Fody" Version="6.0.0" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
 		<PackageReference Include="MySql.Data" Version="9.4.0" />
+		<PackageReference Include="NLog" Version="6.0.4" />
 		<PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.9.1" />
 		<PackageReference Include="System.Drawing.Common" Version="9.0.9" />
 		<PackageReference Include="Topshelf.Log4Net" Version="4.3.0" />

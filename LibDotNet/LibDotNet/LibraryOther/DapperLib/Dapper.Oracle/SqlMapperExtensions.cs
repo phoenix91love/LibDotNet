@@ -1,6 +1,4 @@
-using DapperCoreLib;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace DapperCoreLib
@@ -41,7 +39,7 @@ namespace DapperCoreLib
             {
                 handler = null;
                 return false;
-            }            
+            }
         }
     }
 }

@@ -17,7 +17,7 @@ namespace DapperCoreLib
         /// </summary>
         /// <param name="trueValue">BulkMapping value to use in database for a boolean true value</param>
         /// <param name="falseValue">BulkMapping value to use in database for a boolean false value</param>
-        public BooleanStringTypeHandler(string trueValue, string falseValue,StringComparison comparison = StringComparison.Ordinal)
+        public BooleanStringTypeHandler(string trueValue, string falseValue, StringComparison comparison = StringComparison.Ordinal)
         {
             trueString = trueValue;
             falseString = falseValue;
@@ -38,16 +38,16 @@ namespace DapperCoreLib
                 {
                     return true;
                 }
-                
-                if(valuestring.Equals(falseString,compareMode))
+
+                if (valuestring.Equals(falseString, compareMode))
                 {
                     return false;
                 }
-                
-                throw new NotSupportedException($"'{valuestring}' was unexpected - expected '{trueString}' or '{falseString}'");                
+
+                throw new NotSupportedException($"'{valuestring}' was unexpected - expected '{trueString}' or '{falseString}'");
             }
-            
+
             throw new NotSupportedException($"Dont know how to convert a {value.GetType()} to a Boolean");
-        }       
+        }
     }
 }

@@ -1248,7 +1248,7 @@ namespace DapperCoreLib
                     reader.Dispose();
                 }
                 if (wasClosed) cnn.Close();
-                
+
                 cmd?.Parameters.Clear();
                 cmd?.Dispose();
             }
@@ -1707,15 +1707,15 @@ namespace DapperCoreLib
 
         private static Func<DbDataReader, TReturn> GenerateMapper<TFirst, TSecond, TThird, TFourth, TFifth, TSixth, TSeventh, TReturn>(Func<DbDataReader, object> deserializer, Func<DbDataReader, object>[] otherDeserializers, object map)
             => otherDeserializers.Length switch
-        {
-            1 => r => ((Func<TFirst, TSecond, TReturn>)map)((TFirst)deserializer(r), (TSecond)otherDeserializers[0](r)),
-            2 => r => ((Func<TFirst, TSecond, TThird, TReturn>)map)((TFirst)deserializer(r), (TSecond)otherDeserializers[0](r), (TThird)otherDeserializers[1](r)),
-            3 => r => ((Func<TFirst, TSecond, TThird, TFourth, TReturn>)map)((TFirst)deserializer(r), (TSecond)otherDeserializers[0](r), (TThird)otherDeserializers[1](r), (TFourth)otherDeserializers[2](r)),
-            4 => r => ((Func<TFirst, TSecond, TThird, TFourth, TFifth, TReturn>)map)((TFirst)deserializer(r), (TSecond)otherDeserializers[0](r), (TThird)otherDeserializers[1](r), (TFourth)otherDeserializers[2](r), (TFifth)otherDeserializers[3](r)),
-            5 => r => ((Func<TFirst, TSecond, TThird, TFourth, TFifth, TSixth, TReturn>)map)((TFirst)deserializer(r), (TSecond)otherDeserializers[0](r), (TThird)otherDeserializers[1](r), (TFourth)otherDeserializers[2](r), (TFifth)otherDeserializers[3](r), (TSixth)otherDeserializers[4](r)),
-            6 => r => ((Func<TFirst, TSecond, TThird, TFourth, TFifth, TSixth, TSeventh, TReturn>)map)((TFirst)deserializer(r), (TSecond)otherDeserializers[0](r), (TThird)otherDeserializers[1](r), (TFourth)otherDeserializers[2](r), (TFifth)otherDeserializers[3](r), (TSixth)otherDeserializers[4](r), (TSeventh)otherDeserializers[5](r)),
-            _ => throw new NotSupportedException(),
-        };
+            {
+                1 => r => ((Func<TFirst, TSecond, TReturn>)map)((TFirst)deserializer(r), (TSecond)otherDeserializers[0](r)),
+                2 => r => ((Func<TFirst, TSecond, TThird, TReturn>)map)((TFirst)deserializer(r), (TSecond)otherDeserializers[0](r), (TThird)otherDeserializers[1](r)),
+                3 => r => ((Func<TFirst, TSecond, TThird, TFourth, TReturn>)map)((TFirst)deserializer(r), (TSecond)otherDeserializers[0](r), (TThird)otherDeserializers[1](r), (TFourth)otherDeserializers[2](r)),
+                4 => r => ((Func<TFirst, TSecond, TThird, TFourth, TFifth, TReturn>)map)((TFirst)deserializer(r), (TSecond)otherDeserializers[0](r), (TThird)otherDeserializers[1](r), (TFourth)otherDeserializers[2](r), (TFifth)otherDeserializers[3](r)),
+                5 => r => ((Func<TFirst, TSecond, TThird, TFourth, TFifth, TSixth, TReturn>)map)((TFirst)deserializer(r), (TSecond)otherDeserializers[0](r), (TThird)otherDeserializers[1](r), (TFourth)otherDeserializers[2](r), (TFifth)otherDeserializers[3](r), (TSixth)otherDeserializers[4](r)),
+                6 => r => ((Func<TFirst, TSecond, TThird, TFourth, TFifth, TSixth, TSeventh, TReturn>)map)((TFirst)deserializer(r), (TSecond)otherDeserializers[0](r), (TThird)otherDeserializers[1](r), (TFourth)otherDeserializers[2](r), (TFifth)otherDeserializers[3](r), (TSixth)otherDeserializers[4](r), (TSeventh)otherDeserializers[5](r)),
+                _ => throw new NotSupportedException(),
+            };
 
         private static Func<DbDataReader, TReturn> GenerateMapper<TReturn>(int length, Func<DbDataReader, object> deserializer, Func<DbDataReader, object>[] otherDeserializers, Func<object[], TReturn> map)
         {
@@ -1987,7 +1987,7 @@ namespace DapperCoreLib
                 return new ArgumentException(
                     string.IsNullOrEmpty(splitOn)
                     ? "When using the multi-mapping APIs ensure you set the splitOn param if you have keys other than Id"
-                    : $"Multi-map error: splitOn column '{splitOn}' was not found - please ensure your splitOn parameter is set and in the correct order", 
+                    : $"Multi-map error: splitOn column '{splitOn}' was not found - please ensure your splitOn parameter is set and in the correct order",
                     nameof(splitOn));
             }
             else
@@ -2555,12 +2555,12 @@ namespace DapperCoreLib
             }
 
             bool filterParams = removeUnused && identity.CommandType.GetValueOrDefault(CommandType.Text) == CommandType.Text;
-            
+
             if (filterParams && Settings.SupportLegacyParameterTokens)
             {
                 filterParams = !CompiledRegex.LegacyParameter.IsMatch(identity.Sql);
             }
-            
+
             var dm = new DynamicMethod("ParamInfo" + Guid.NewGuid().ToString(), null, [typeof(IDbCommand), typeof(object)], type, true);
 
             var il = dm.GetILGenerator();

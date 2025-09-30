@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace DapperCoreLib
@@ -55,7 +52,7 @@ namespace DapperCoreLib
             return connection.Execute(sql, parameters, commandType: cmdType);
         }
 
-        public static async Task<int> SqlBulkAsync<T>(this IDbConnection connection, string sql, IEnumerable<T> objects, IEnumerable<BulkMapping<T>> mapping, CommandType? cmdType = CommandType.Text, IDbTransaction? transaction=null)
+        public static async Task<int> SqlBulkAsync<T>(this IDbConnection connection, string sql, IEnumerable<T> objects, IEnumerable<BulkMapping<T>> mapping, CommandType? cmdType = CommandType.Text, IDbTransaction? transaction = null)
         {
             var parameters = CreateParameterFromObject(objects, mapping);
             return await connection.ExecuteAsync(sql, parameters, transaction, commandType: cmdType);

@@ -1,11 +1,8 @@
 ﻿using log4net.Config;
-using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading;
 using System.Xml;
 using Topshelf;
-using Topshelf.HostConfigurators;
 
 namespace Libs.ProcessServices
 {
@@ -31,7 +28,7 @@ namespace Libs.ProcessServices
                     service.WhenStarted(_ => _.Start());
                     service.WhenStopped(_ => _.Stop());
                 });
-               //hostConfigurator.OnException(ex => { SingletonProvider<LogWriter>.Instance.WriterLogError(ex.Message, ex); });
+                //hostConfigurator.OnException(ex => { SingletonProvider<LogWriter>.Instance.WriterLogError(ex.Message, ex); });
             });
         }
     }

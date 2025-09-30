@@ -13,7 +13,7 @@ namespace DapperCoreLib
             public Type ParameterType { get; set; }
             public string OracleTypeName { get; set; }
         }
-        
+
         private class DictionaryKeyComparer : IEqualityComparer<DictionaryKey>
         {
             public bool Equals(DictionaryKey x, DictionaryKey y)
@@ -34,15 +34,15 @@ namespace DapperCoreLib
             new ConcurrentDictionary<DictionaryKey, Action<IDbDataParameter>>(new DictionaryKeyComparer());
 
         protected void SetOracleDbTypeOnParameter(IDbDataParameter parameter, string oracleTypeName, int? length = null)
-        {            
-            var setter = OracleDbTypeProperty.GetOrAdd(new DictionaryKey {ParameterType = parameter.GetType(),OracleTypeName = oracleTypeName}, CreateSetTypeAction);
+        {
+            var setter = OracleDbTypeProperty.GetOrAdd(new DictionaryKey { ParameterType = parameter.GetType(), OracleTypeName = oracleTypeName }, CreateSetTypeAction);
             setter(parameter);
             if (length.HasValue)
             {
                 parameter.Size = length.Value;
             }
-        }                       
-        
+        }
+
 
         private static Action<IDbDataParameter> CreateSetTypeAction(DictionaryKey key)
         {
@@ -58,6 +58,6 @@ namespace DapperCoreLib
             return Expression.Lambda<Action<IDbDataParameter>>(expression, inputVariable).Compile();
         }
     }
-    
-    
+
+
 }

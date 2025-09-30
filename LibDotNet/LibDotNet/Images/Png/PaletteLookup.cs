@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Libs.Images
 {
-   internal class PaletteLookup
+    internal class PaletteLookup
     {
         private int mMask;
         private Dictionary<int, LookupNode[]> mLookup;

@@ -1,6 +1,6 @@
 namespace Libs.Images
 {
-   internal struct CubeCut
+    internal struct CubeCut
     {
         public readonly byte? Position;
         public readonly float Value;

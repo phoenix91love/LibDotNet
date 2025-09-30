@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Data;
-using System.Linq.Expressions;
 using System.Reflection;
 
 namespace DapperCoreLib
@@ -46,7 +45,7 @@ namespace DapperCoreLib
 
             if (oracleParameterInfo.IsNullable.HasValue)
             {
-                method.IsNullable.SetValue(parameter,oracleParameterInfo.IsNullable.Value);                
+                method.IsNullable.SetValue(parameter, oracleParameterInfo.IsNullable.Value);
             }
 
             if (oracleParameterInfo.Scale.HasValue)
@@ -126,7 +125,7 @@ namespace DapperCoreLib
                 ArrayBindSize = new ObjectWrapper<IDbDataParameter, int[]>("ArrayBindSize", oracleParameterType);
                 CollectionType = new ObjectEnumWrapper<IDbDataParameter, OracleMappingCollectionType>("OracleCollectionType", "CollectionType", oracleParameterType);
                 Status = new ObjectEnumWrapper<IDbDataParameter, OracleParameterMappingStatus>("Status", "Status", oracleParameterType);
-                IsNullable = new ObjectWrapper<IDbDataParameter, bool>("IsNullable",oracleParameterType);
+                IsNullable = new ObjectWrapper<IDbDataParameter, bool>("IsNullable", oracleParameterType);
             }
 
             public ObjectEnumWrapper<IDbDataParameter, OracleDbType> OraDbType { get; }
