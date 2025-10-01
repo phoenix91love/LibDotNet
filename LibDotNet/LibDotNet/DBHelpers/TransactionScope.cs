@@ -16,7 +16,7 @@ namespace LibDotNet.DBHelpers
     /// Access multiple database Sql Server by transaction
     /// </summary>
     /// <typeparam name="T">Type of DatabaseTypeBase: DatabaseSqlServer, DatabaseMySql,DatabasePostgreSql,DatabaseOracle </typeparam>
-    public class TransactionScope<T> where T : DatabaseTypeBase, new()
+    public class TransactionScope<TDB> where TDB : DatabaseTypeBase, new()
     {
         private readonly string _connectionString;
         private readonly DbTransaction _transaction;
@@ -29,7 +29,7 @@ namespace LibDotNet.DBHelpers
 
         private DbConnection CreateConnection()
         {
-            var dbType = new T().Type;
+            var dbType = new TDB().Type;
             return dbType switch
             {
                 DatabaseTypes.SqlServer => new SqlConnection(_connectionString),
@@ -39,7 +39,7 @@ namespace LibDotNet.DBHelpers
                 _ => throw new ArgumentException($"Unsupported database type: {dbType}")
             };
         }
-        private static bool HasRefCursorParameter(object? parameters)
+        private bool HasRefCursorParameter(object? parameters)
         {
             if (parameters is DynamicParameters dynamicParams)
             {
@@ -50,124 +50,75 @@ namespace LibDotNet.DBHelpers
             return false;
         }
 
-        public async Task<IEnumerable<TResult>> QueryAsync<TResult>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = null)
-        {
-
-            var connection = _transaction.Connection ?? CreateConnection();
-            return await connection.QueryAsync<TResult>(sql, parameters, _transaction, commandTimeout: commandTimeout, commandType: commandType);
-        }
-
-        public async Task<TResult?> QueryFirstOrDefaultAsync<TResult>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
+        /// <summary>
+        /// Get single list data
+        /// </summary>
+        /// <typeparam name="T">Type data need return </typeparam>
+        /// <param name="sql">Query get data or store procedure</param>
+        /// <param name="parameters">Parameter with query or store procedure</param>
+        /// <param name="commandTimeout">Timeout query</param>
+        /// <param name="commandType">Type command query. Default is store procedure</param>
+        /// <param name="cusor">Cusor with return data if use Oracle database</param>
+        /// <returns>List data after query</returns>
+        public async Task<IEnumerable<T>> QueryAsync<T>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure, string[]? cusor = null)
         {
             try
             {
                 var connection = _transaction.Connection ?? CreateConnection();
-                var dbType = new T().Type;
-                if (new T().Type == DatabaseTypes.Oracle)
+                if (new TDB().Type == DatabaseTypes.Oracle)
                 {
                     var dynamicParameters = new OracleDynamicParameters(parameters);
-                    if (!HasRefCursorParameter(parameters))
-                        dynamicParameters.Add(name: ":v_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
-                    return await connection.QueryFirstOrDefaultAsync<TResult>(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
+                    cusor = cusor ?? new string[1] { "v_cursor" };
+                    if (cusor.Count() != 1)
+                        throw new Exception("cusor lenght is not match for query");
+
+                    foreach (var item in cusor)
+                        dynamicParameters.Add(name: $":{item}", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
+
+                    return await connection.QueryAsync<T>(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
                 }
                 else
-                    return await connection.QueryFirstOrDefaultAsync<TResult>(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
+                {
+
+                    return await connection.QueryAsync<T>(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
+                }
+
             }
-            catch (Exception ex)
+            catch
             {
                 throw;
             }
         }
 
-        public async Task<TResult?> QueryFirstAsync<TResult>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
+        /// <summary>
+        /// Get multiple list data
+        /// </summary>
+        /// <typeparam name="T1">Type data need return</typeparam>
+        /// <typeparam name="T2">Type data need return</typeparam>
+        /// <param name="sql">Query get data or store procedure</param>
+        /// <param name="parameters">Parameter with query or store procedure</param>
+        /// <param name="commandTimeout">Timeout query</param>
+        /// <param name="commandType">Type command query. Default is store procedure</param>
+        /// <param name="cusor">Cusor with return data if use Oracle database</param>
+        /// <returns>List data after query</returns>
+        public async Task<(IEnumerable<T1>, IEnumerable<T2>)> QueryAsync<T1, T2>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure, string[]? cusor = null)
         {
             try
             {
                 var connection = _transaction.Connection ?? CreateConnection();
-                var dbType = new T().Type;
-                if (new T().Type == DatabaseTypes.Oracle)
+                if (new TDB().Type == DatabaseTypes.Oracle)
                 {
+                    cusor = cusor ?? new string[2] { "v_cursor1", "v_cursor2" };
+                    if (cusor.Count() != 2)
+                        throw new Exception($"Parameter {nameof(cusor)} lenght is not match for query");
+
                     var dynamicParameters = new OracleDynamicParameters(parameters);
-                    if (!HasRefCursorParameter(parameters))
-                        dynamicParameters.Add(name: ":v_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
+                    foreach (var item in cusor)
+                        dynamicParameters.Add(name: $":{item}", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
-                    return await connection.QueryFirstAsync<TResult>(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
-                }
-                else
-                    return await connection.QueryFirstAsync<TResult>(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
-        }
 
-        public async Task<TResult?> QuerySingleOrDefaultAsync<TResult>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
-        {
-            try
-            {
-                var connection = _transaction.Connection ?? CreateConnection();
-                var dbType = new T().Type;
-                if (new T().Type == DatabaseTypes.Oracle)
-                {
-                    var dynamicParameters = new OracleDynamicParameters(parameters);
-                    if (!HasRefCursorParameter(parameters))
-                        dynamicParameters.Add(name: ":v_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
-
-                    return await connection.QuerySingleOrDefaultAsync<TResult>(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
-                }
-                else
-                    return await connection.QuerySingleOrDefaultAsync<TResult>(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
-        }
-
-        public async Task<TResult> QuerySingleAsync<TResult>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
-        {
-            try
-            {
-                var connection = _transaction.Connection ?? CreateConnection();
-                var dbType = new T().Type;
-                if (new T().Type == DatabaseTypes.Oracle)
-                {
-                    var dynamicParameters = new OracleDynamicParameters(parameters);
-                    if (!HasRefCursorParameter(parameters))
-                        dynamicParameters.Add(name: ":v_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
-
-                    return await connection.QuerySingleAsync<TResult>(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
-                }
-                else
-                    return await connection.QuerySingleAsync<TResult>(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
-        }
-
-        public async Task<int> ExecuteAsync(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
-        {
-            var connection = _transaction.Connection ?? CreateConnection();
-            return await connection.ExecuteAsync(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
-        }
-
-        public async Task<(IEnumerable<T1>, IEnumerable<T2>)> QueryMultipleAsync<T1, T2>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
-        {
-            try
-            {
-                var connection = _transaction.Connection ?? CreateConnection();
-                var dbType = new T().Type;
-                if (new T().Type == DatabaseTypes.Oracle)
-                {
-                    var dynamicParameters = new OracleDynamicParameters(parameters);
-                    dynamicParameters.Add(name: ":v_cursor1", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
-                    dynamicParameters.Add(name: ":v_cursor2", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
-
-                    using var gridReaderOracle = await connection.QueryMultipleAsync(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
+                    using var gridReaderOracle = await connection.QueryMultipleAsync(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
 
                     var result1 = await gridReaderOracle.ReadAsync<T1>();
                     var result2 = await gridReaderOracle.ReadAsync<T2>();
@@ -176,6 +127,7 @@ namespace LibDotNet.DBHelpers
                 }
                 else
                 {
+
                     using var gridReaderNormal = await connection.QueryMultipleAsync(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
 
                     var result1 = await gridReaderNormal.ReadAsync<T1>();
@@ -190,34 +142,48 @@ namespace LibDotNet.DBHelpers
             }
         }
 
-        public async Task<(IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>)> QueryMultipleAsync<T1, T2, T3>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
+        /// <summary>
+        /// Get multiple list data
+        /// </summary>
+        /// <typeparam name="T1">Type data need return</typeparam>
+        /// <typeparam name="T2">Type data need return</typeparam>
+        /// <typeparam name="T3">Type data need return</typeparam>
+        /// <param name="sql">Query get data or store procedure</param>
+        /// <param name="parameters">Parameter with query or store procedure</param>
+        /// <param name="commandTimeout">Timeout query</param>
+        /// <param name="commandType">Type command query. Default is store procedure</param>
+        /// <param name="cusor">Cusor with return data if use Oracle database</param>
+        /// <returns>List data after query</returns>
+        public async Task<(IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>)> QueryAsync<T1, T2, T3>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure, string[]? cusor = null)
         {
             try
             {
                 var connection = _transaction.Connection ?? CreateConnection();
-                var dbType = new T().Type;
-                if (new T().Type == DatabaseTypes.Oracle)
+                if (new TDB().Type == DatabaseTypes.Oracle)
                 {
-                    var dynamicParameters = new OracleDynamicParameters(parameters);
-                    dynamicParameters.Add(name: ":v_cursor1", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
-                    dynamicParameters.Add(name: ":v_cursor2", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
-                    dynamicParameters.Add(name: ":v_cursor3", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
+                    cusor = cusor ?? new string[3] { "v_cursor1", "v_cursor2", "v_cursor3" };
+                    if (cusor.Count() != 3)
+                        throw new Exception($"Parameter {nameof(cusor)} lenght is not match for query");
 
-                    using var gridReaderOracle = await connection.QueryMultipleAsync(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
+                    var dynamicParameters = new OracleDynamicParameters(parameters);
+                    foreach (var item in cusor)
+                        dynamicParameters.Add(name: $":{item}", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
+
+
+                    using var gridReaderOracle = await connection.QueryMultipleAsync(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
 
                     var result1 = await gridReaderOracle.ReadAsync<T1>();
                     var result2 = await gridReaderOracle.ReadAsync<T2>();
                     var result3 = await gridReaderOracle.ReadAsync<T3>();
-
                     return (result1, result2, result3);
                 }
                 else
                 {
+
                     using var gridReaderNormal = await connection.QueryMultipleAsync(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
                     var result1 = await gridReaderNormal.ReadAsync<T1>();
                     var result2 = await gridReaderNormal.ReadAsync<T2>();
                     var result3 = await gridReaderNormal.ReadAsync<T3>();
-
                     return (result1, result2, result3);
                 }
             }
@@ -228,22 +194,35 @@ namespace LibDotNet.DBHelpers
 
         }
 
-        public async Task<(IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>)> QueryMultipleAsync<T1, T2, T3, T4>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
+        /// <summary>
+        /// Get multiple list data
+        /// </summary>
+        /// <typeparam name="T1">Type data need return</typeparam>
+        /// <typeparam name="T2">Type data need return</typeparam>
+        /// <typeparam name="T3">Type data need return</typeparam>
+        /// <typeparam name="T4">Type data need return</typeparam>
+        /// <param name="sql">Query get data or store procedure</param>
+        /// <param name="parameters">Parameter with query or store procedure</param>
+        /// <param name="commandTimeout">Timeout query</param>
+        /// <param name="commandType">Type command query. Default is store procedure</param>
+        /// <param name="cusor">Cusor with return data if use Oracle database</param>
+        /// <returns>List data after query</returns>
+        public async Task<(IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>)> QueryAsync<T1, T2, T3, T4>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure, string[]? cusor = null)
         {
             try
             {
                 var connection = _transaction.Connection ?? CreateConnection();
-                var dbType = new T().Type;
-                if (new T().Type == DatabaseTypes.Oracle)
+                if (new TDB().Type == DatabaseTypes.Oracle)
                 {
+                    cusor = cusor ?? new string[4] { "v_cursor1", "v_cursor2", "v_cursor3", "v_cursor4" };
+                    if (cusor.Count() != 4)
+                        throw new Exception($"Parameter {nameof(cusor)} lenght is not match for query");
+
                     var dynamicParameters = new OracleDynamicParameters(parameters);
-                    dynamicParameters.Add(name: ":v_cursor1", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
-                    dynamicParameters.Add(name: ":v_cursor2", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
-                    dynamicParameters.Add(name: ":v_cursor3", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
-                    dynamicParameters.Add(name: ":v_cursor4", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
+                    foreach (var item in cusor)
+                        dynamicParameters.Add(name: $":{item}", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
-                    using var gridReaderOracle = await connection.QueryMultipleAsync(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
-
+                    using var gridReaderOracle = await connection.QueryMultipleAsync(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
                     var result1 = await gridReaderOracle.ReadAsync<T1>();
                     var result2 = await gridReaderOracle.ReadAsync<T2>();
                     var result3 = await gridReaderOracle.ReadAsync<T3>();
@@ -268,40 +247,52 @@ namespace LibDotNet.DBHelpers
             }
         }
 
-        public async Task<(IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>)> QueryMultipleAsync<T1, T2, T3, T4, T5>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
+        /// <summary>
+        /// Get multiple list data
+        /// </summary>
+        /// <typeparam name="T1">Type data need return</typeparam>
+        /// <typeparam name="T2">Type data need return</typeparam>
+        /// <typeparam name="T3">Type data need return</typeparam>
+        /// <typeparam name="T4">Type data need return</typeparam>
+        /// <typeparam name="T5">Type data need return</typeparam>
+        /// <param name="sql">Query get data or store procedure</param>
+        /// <param name="parameters">Parameter with query or store procedure</param>
+        /// <param name="commandTimeout">Timeout query</param>
+        /// <param name="commandType">Type command query. Default is store procedure</param>
+        /// <param name="cusor">Cusor with return data if use Oracle database</param>
+        /// <returns>List data after query</returns>
+        public async Task<(IEnumerable<T1>, IEnumerable<T2>, IEnumerable<T3>, IEnumerable<T4>, IEnumerable<T5>)> QueryAsync<T1, T2, T3, T4, T5>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure, string[]? cusor = null)
         {
             try
             {
                 var connection = _transaction.Connection ?? CreateConnection();
-                var dbType = new T().Type;
-                if (new T().Type == DatabaseTypes.Oracle)
+                if (new TDB().Type == DatabaseTypes.Oracle)
                 {
+                    cusor = cusor ?? new string[5] { "v_cursor1", "v_cursor2", "v_cursor3", "v_cursor4", "v_cursor5" };
+                    if (cusor.Count() != 5)
+                        throw new Exception($"Parameter {nameof(cusor)} lenght is not match for query");
+
                     var dynamicParameters = new OracleDynamicParameters(parameters);
-                    dynamicParameters.Add(name: ":v_cursor1", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
-                    dynamicParameters.Add(name: ":v_cursor2", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
-                    dynamicParameters.Add(name: ":v_cursor3", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
-                    dynamicParameters.Add(name: ":v_cursor4", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
+                    foreach (var item in cusor)
+                        dynamicParameters.Add(name: $":{item}", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
-                    using var gridReaderOracle = await connection.QueryMultipleAsync(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
-
+                    using var gridReaderOracle = await connection.QueryMultipleAsync(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
                     var result1 = await gridReaderOracle.ReadAsync<T1>();
                     var result2 = await gridReaderOracle.ReadAsync<T2>();
                     var result3 = await gridReaderOracle.ReadAsync<T3>();
                     var result4 = await gridReaderOracle.ReadAsync<T4>();
-
                     var result5 = await gridReaderOracle.ReadAsync<T5>();
-
                     return (result1, result2, result3, result4, result5);
                 }
                 else
                 {
+
                     using var gridReaderNormal = await connection.QueryMultipleAsync(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
                     var result1 = await gridReaderNormal.ReadAsync<T1>();
                     var result2 = await gridReaderNormal.ReadAsync<T2>();
                     var result3 = await gridReaderNormal.ReadAsync<T3>();
                     var result4 = await gridReaderNormal.ReadAsync<T4>();
                     var result5 = await gridReaderNormal.ReadAsync<T5>();
-
                     return (result1, result2, result3, result4, result5);
                 }
             }
@@ -311,10 +302,133 @@ namespace LibDotNet.DBHelpers
             }
         }
 
-        // Factory method thay thế cho extension method
-        internal static TransactionScope<T> Create(string connectionString, DbTransaction transaction)
+        /// <summary>
+        /// Get First Or Default object
+        /// </summary>
+        /// <typeparam name="T">Object need return</typeparam>
+        /// <param name="sql">Query get data or store procedure</param>
+        /// <param name="parameters">Parameter with query or store procedure</param>
+        /// <param name="commandTimeout">Timeout query</param>
+        /// <param name="commandType">Type command query. Default is store procedure</param>
+        /// <param name="cusor">Cusor with return data if use Oracle database</param>
+        /// <returns>Data after query</returns>
+        public async Task<T?> QueryFirstOrDefaultAsync<T>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure, string[]? cusor = null)
         {
-            return new TransactionScope<T>(connectionString, transaction);
+            try
+            {
+                var connection = _transaction.Connection ?? CreateConnection();
+                if (new TDB().Type == DatabaseTypes.Oracle)
+                {
+                    cusor = cusor ?? new string[1] { "v_cursor1" };
+                    if (cusor.Count() != 1)
+                        throw new Exception($"Parameter {nameof(cusor)} lenght is not match for query");
+
+                    var dynamicParameters = new OracleDynamicParameters(parameters);
+                    foreach (var item in cusor)
+                        dynamicParameters.Add(name: $":{item}", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
+
+                    return await connection.QueryFirstOrDefaultAsync<T>(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
+                }
+                else
+                    return await connection.QueryFirstOrDefaultAsync<T>(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Get First object
+        /// </summary>
+        /// <typeparam name="T">Object need return</typeparam>
+        /// <param name="sql">Query get data or store procedure</param>
+        /// <param name="parameters">Parameter with query or store procedure</param>
+        /// <param name="commandTimeout">Timeout query</param>
+        /// <param name="commandType">Type command query. Default is store procedure</param>
+        /// <param name="cusor">Cusor with return data if use Oracle database</param>
+        /// <returns>Data after query</returns>
+        public async Task<T?> QueryFirstAsync<T>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure, string[]? cusor = null)
+        {
+            try
+            {
+                var connection = _transaction.Connection ?? CreateConnection();
+                if (new TDB().Type == DatabaseTypes.Oracle)
+                {
+                    cusor = cusor ?? new string[1] { "v_cursor1" };
+                    if (cusor.Count() != 1)
+                        throw new Exception($"Parameter {nameof(cusor)} lenght is not match for query");
+
+                    var dynamicParameters = new OracleDynamicParameters(parameters);
+                    foreach (var item in cusor)
+                        dynamicParameters.Add(name: $":{item}", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
+
+                    return await connection.QueryFirstAsync<T>(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
+                }
+                else
+                    return await connection.QueryFirstAsync<T>(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Get Single Or Default object
+        /// </summary>
+        /// <typeparam name="T">Object need return</typeparam>
+        /// <param name="sql">Query get data or store procedure</param>
+        /// <param name="parameters">Parameter with query or store procedure</param>
+        /// <param name="commandTimeout">Timeout query</param>
+        /// <param name="commandType">Type command query. Default is store procedure</param>
+        /// <param name="cusor">Cusor with return data if use Oracle database</param>
+        /// <returns>Data after query</returns>
+        public async Task<T?> QuerySingleOrDefaultAsync<T>(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure, string[]? cusor = null)
+        {
+            try
+            {
+                var connection = _transaction.Connection ?? CreateConnection();
+                if (new TDB().Type == DatabaseTypes.Oracle)
+                {
+                    cusor = cusor ?? new string[1] { "v_cursor1" };
+                    if (cusor.Count() != 1)
+                        throw new Exception($"Parameter {nameof(cusor)} lenght is not match for query");
+
+                    var dynamicParameters = new OracleDynamicParameters(parameters);
+                    foreach (var item in cusor)
+                        dynamicParameters.Add(name: $":{item}", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
+
+                    return await connection.QuerySingleOrDefaultAsync<T>(sql, dynamicParameters, commandTimeout: commandTimeout, commandType: commandType);
+                }
+                else
+                    return await connection.QuerySingleOrDefaultAsync<T>(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
+
+
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Execute query or store procedure
+        /// </summary>
+        /// <param name="parameters">Parameter with query or store procedure</param>
+        /// <param name="commandTimeout">Timeout query</param>
+        /// <param name="commandType">Type command query. Default is store procedure</param>
+        /// <returns></returns>
+        public async Task<int> ExecuteAsync(string sql, object? parameters = null, int? commandTimeout = null, CommandType? commandType = CommandType.StoredProcedure)
+        {
+            var connection = _transaction.Connection ?? CreateConnection();
+            return await connection.ExecuteAsync(sql, parameters, commandTimeout: commandTimeout, commandType: commandType);
+        }
+
+        // Factory method thay thế cho extension method
+        internal static TransactionScope<TDB> Create(string connectionString, DbTransaction transaction)
+        {
+            return new TransactionScope<TDB>(connectionString, transaction);
         }
     }
 

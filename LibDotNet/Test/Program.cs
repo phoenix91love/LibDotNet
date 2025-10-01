@@ -9,12 +9,9 @@ namespace Test
     {
         static async Task Main(string[] args)
         {
-            
+
             const string sqlServerConn = "Server=.;Database=Test;Trusted_Connection=true;";
-            LogWriters<Program>.Info(sqlServerConn);
-            LogWriters<regions>.Info(sqlServerConn);
-            LogWriters<Program>.Info(sqlServerConn);
-            LogWriters<regions>.Info(sqlServerConn);
+
             string connectionOracle = "Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=192.168.1.99)(PORT=1528))(CONNECT_DATA=(SERVICE_NAME=DATATEST)));User Id=system;Password=admin123;";
             // Query đơn giản
             try
@@ -36,25 +33,25 @@ namespace Test
             //    new { UserId = 1 }, commandType: CommandType.StoredProcedure);
 
 
-            //// Cách 2: Sử dụng với transaction scope tường minh
-            //var success = await DatabaseAccess<DatabaseSqlServer>.ExecuteInTransactionAsync(sqlServerConn,
-            //    async transactionScope =>
-            //    {
-            //        // Thực hiện multiple operations
-            //        var userId = await transactionScope.ExecuteAsync(
-            //            "INSERT INTO Users (Name, Email) VALUES (@Name, @Email); SELECT SCOPE_IDENTITY();",
-            //            new { Name = "Jane", Email = "jane@email.com" });
+            // Cách 2: Sử dụng với transaction scope tường minh
+            var success = await DatabaseAccess<DatabaseOracle>.ExecuteInTransactionAsync<regions>(sqlServerConn,
+                async transactionScope =>
+                {
+                    // Thực hiện multiple operations
+                    var userId = await transactionScope.ExecuteAsync(
+                        "INSERT INTO Users (Name, Email) VALUES (@Name, @Email); SELECT SCOPE_IDENTITY();",
+                        new { Name = "Jane", Email = "jane@email.com" });
 
-            //        var user = await transactionScope.QueryFirstOrDefaultAsync<User>(
-            //            "SELECT * FROM Users WHERE Id = @Id",
-            //            new { Id = userId });
+                    var user = await transactionScope.QueryAsync<regions, regions, regions>(
+                        "SELECT * FROM Users WHERE Id = @Id",
+                        new { Id = userId });
 
-            //        await transactionScope.ExecuteAsync(
-            //            "INSERT INTO UserLogs (UserId, Action) VALUES (@UserId, @Action)",
-            //            new { UserId = userId, Action = "Created" });
+                    await transactionScope.ExecuteAsync(
+                        "INSERT INTO UserLogs (UserId, Action) VALUES (@UserId, @Action)",
+                        new { UserId = userId, Action = "Created" });
 
-            //        return user != null;
-            //    });
+                    return new regions();
+                });
         }
 
     }
