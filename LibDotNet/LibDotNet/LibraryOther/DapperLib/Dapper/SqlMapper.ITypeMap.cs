@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     internal static partial class SqlMapper
     {

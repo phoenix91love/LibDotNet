@@ -1,20 +1,28 @@
 ﻿using System.IO;
 using System.Net;
+using System.Text;
 
 namespace Libs.Images
 {
     internal class Helper
     {
-        public static Stream DownloadImage(string imageUrl)
+        internal static Stream DownloadImage(string imageUrl)
         {
             using (WebClient client = new WebClient())
             {
-                client.Headers.Add(HttpRequestHeader.UserAgent, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36");
+                client.Encoding = Encoding.UTF8;
+                client.Headers[HttpRequestHeader.AcceptEncoding] = "gzip, deflate";
+                client.Headers[HttpRequestHeader.UserAgent] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36";
+
+                // Bật chế độ sử dụng buffer để tối ưu hiệu năng
+                client.UseDefaultCredentials = false;
+                client.Proxy = null; // Tắt Proxy nếu không cần
+               
                 return client.OpenRead(imageUrl);
             }
         }
 
-        public static byte[] ReadByte(Stream input)
+        internal static byte[] ReadByte(Stream input)
         {
             byte[] buffer = new byte[16 * 1024];
             using (MemoryStream ms = new MemoryStream())

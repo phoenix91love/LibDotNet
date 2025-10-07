@@ -3,7 +3,7 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     public static class BulkOperation
     {

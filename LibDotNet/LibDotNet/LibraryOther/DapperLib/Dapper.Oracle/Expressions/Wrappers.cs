@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     internal class ObjectEnumWrapper<TObject, TEnumType> : ObjectWrapper<TObject, TEnumType>
     {

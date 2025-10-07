@@ -1,4 +1,4 @@
-﻿namespace LibDotNet.DBHelpers
+﻿namespace Libs.DBHelpers
 {
     public enum DatabaseTypes
     {

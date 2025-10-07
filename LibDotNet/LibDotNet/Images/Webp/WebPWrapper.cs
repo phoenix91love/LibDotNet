@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Libs.Helpers;
+using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -7,20 +8,29 @@ using System.Security;
 
 namespace Libs.Images
 {
+
+    internal class WebPDll
+    {
+        public WebPDll()
+        {
+            var currentFile = System.AppDomain.CurrentDomain.BaseDirectory;
+            if (!File.Exists($"{currentFile}libwebp_x64.dll"))
+                File.WriteAllBytes($"{currentFile}libwebp_x64.dll", Libs.Properties.Resources.libwebp_x64);
+            if (!File.Exists($"{currentFile}libwebp_x86.dll"))
+                File.WriteAllBytes($"{currentFile}libwebp_x86.dll", Libs.Properties.Resources.libwebp_x86);
+        }
+
+        public bool Init() => true;
+    }
+
     internal sealed class WebP : IDisposable
     {
         public WebP()
         {
-            this.InitFile();
+            SingletonProvider<WebPDll>.Instance.Init();
         }
-        private void InitFile()
-        {
-            var currentFile = System.AppDomain.CurrentDomain.BaseDirectory;
-            if (!File.Exists($"{currentFile}libwebp_x64.dll"))
-                File.WriteAllBytes($"{currentFile}libwebp_x64.dll", LibDotNet.Properties.Resources.libwebp_x64);
-            if (!File.Exists($"{currentFile}libwebp_x86.dll"))
-                File.WriteAllBytes($"{currentFile}libwebp_x86.dll", LibDotNet.Properties.Resources.libwebp_x86);
-        }
+
+
         #region | Public Decompress Functions |
         /// <summary>Read a WebP file</summary>
         /// <param name="pathFileName">ebP file to load</param>
@@ -55,8 +65,8 @@ namespace Libs.Images
             int imgWidth;
             int imgHeight;
             int outputSize;
-            Bitmap bmp = null;
-            BitmapData bmpData = null;
+            Bitmap? bmp = null;
+            BitmapData? bmpData = null;
             GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 
             try
@@ -82,7 +92,7 @@ namespace Libs.Images
             {
                 //Unlock the pixels
                 if (bmpData != null)
-                    bmp.UnlockBits(bmpData);
+                    bmp?.UnlockBits(bmpData);
 
                 //Free memory
                 if (pinnedWebP.IsAllocated)
@@ -882,12 +892,11 @@ namespace Libs.Images
 
         #region | Destruction |
         /// <summary>Free memory</summary>
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
-        }
+        public void Dispose() => GC.SuppressFinalize(this);
+
         #endregion
     }
+
 
     #region | Import libwebp functions |
     [SuppressUnmanagedCodeSecurityAttribute]

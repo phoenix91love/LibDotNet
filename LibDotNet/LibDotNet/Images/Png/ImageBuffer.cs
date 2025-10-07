@@ -14,7 +14,7 @@ namespace Libs.Images
 
         public Bitmap Image;
 
-        public IEnumerable<Pixel[]> PixelLines
+        internal IEnumerable<Pixel[]> PixelLines
         {
             get
             {
@@ -44,7 +44,7 @@ namespace Libs.Images
             }
         }
 
-        public void UpdatePixelIndexes(IEnumerable<byte[]> lineIndexes)
+        internal void UpdatePixelIndexes(IEnumerable<byte[]> lineIndexes)
         {
             int width = this.Image.Width;
             int height = this.Image.Height;

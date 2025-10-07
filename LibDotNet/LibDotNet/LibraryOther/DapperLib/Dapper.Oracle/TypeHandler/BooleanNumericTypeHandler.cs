@@ -1,7 +1,7 @@
 using System;
 using System.Data;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
 
     /// <summary>

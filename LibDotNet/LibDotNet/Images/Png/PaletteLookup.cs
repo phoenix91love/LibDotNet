@@ -7,10 +7,10 @@ namespace Libs.Images
     internal class PaletteLookup
     {
         private int mMask;
-        private Dictionary<int, LookupNode[]> mLookup;
+        private Dictionary<int, LookupNode[]>? mLookup;
         private LookupNode[] Palette;
 
-        public PaletteLookup(Pixel[] palette)
+        internal PaletteLookup(Pixel[] palette)
         {
             this.Palette = new LookupNode[palette.Length];
             for (int paletteIndex = 0; paletteIndex < palette.Length; paletteIndex++)
@@ -19,7 +19,7 @@ namespace Libs.Images
             this.BuildLookup(palette);
         }
 
-        public byte GetPaletteIndex(Pixel pixel)
+        internal byte GetPaletteIndex(Pixel pixel)
         {
             int pixelKey = pixel.Argb & mMask;
             LookupNode[] bucket;

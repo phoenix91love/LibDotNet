@@ -18,7 +18,7 @@ using System.Threading;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     /// <summary>
     /// Dapper, a light weight object mapper for ADO.NET

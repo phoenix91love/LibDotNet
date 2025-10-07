@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     internal static class OracleMapper
     {

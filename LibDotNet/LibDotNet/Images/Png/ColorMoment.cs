@@ -42,7 +42,7 @@
             return c1;
         }
 
-        public void Add(Pixel p)
+        internal void Add(Pixel p)
         {
             byte pAlpha = p.Alpha;
             byte pRed = p.Red;
@@ -56,7 +56,7 @@
             Moment += pAlpha * pAlpha + pRed * pRed + pGreen * pGreen + pBlue * pBlue;
         }
 
-        public void AddFast(ref ColorMoment c2)
+        internal void AddFast(ref ColorMoment c2)
         {
             Alpha += c2.Alpha;
             Red += c2.Red;
@@ -66,11 +66,11 @@
             Moment += c2.Moment;
         }
 
-        public long Amplitude() => Alpha * Alpha + Red * Red + Green * Green + Blue * Blue;
+        internal long Amplitude() => Alpha * Alpha + Red * Red + Green * Green + Blue * Blue;
 
-        public long WeightedDistance() => Amplitude() / Weight;
+        internal long WeightedDistance() => Amplitude() / Weight;
 
-        public float Variance()
+        internal float Variance()
         {
             var result = Moment - (float)Amplitude() / Weight;
             return float.IsNaN(result) ? 0.0f : result;

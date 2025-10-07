@@ -10,7 +10,7 @@ namespace Libs.Images
         public int Blue;
         public int Sum;
 
-        public Color ToNormalizedColor() => (Sum != 0) ? Color.FromArgb((int)(Alpha / Sum), (int)(Red / Sum), (int)(Green / Sum), (int)(Blue / Sum)) : Color.Transparent;
+        internal Color ToNormalizedColor() => (Sum != 0) ? Color.FromArgb((int)(Alpha / Sum), (int)(Red / Sum), (int)(Green / Sum), (int)(Blue / Sum)) : Color.Transparent;
 
         public void AddPixel(Pixel pixel)
         {

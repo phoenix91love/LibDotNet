@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Data;
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     internal sealed class DataTableHandler : SqlMapper.ITypeHandler
     {

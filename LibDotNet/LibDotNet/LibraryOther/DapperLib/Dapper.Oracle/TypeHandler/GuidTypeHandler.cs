@@ -1,7 +1,7 @@
 using System;
 using System.Data;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     /// <summary>
     /// Conversion between <see cref="Guid"/> and RAW(16) Oracle data type 

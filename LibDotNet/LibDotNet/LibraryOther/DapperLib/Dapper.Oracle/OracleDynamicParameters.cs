@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     /// <summary>
     /// Parameter support for Oracle-specific types and functions.  For use with Dapper.

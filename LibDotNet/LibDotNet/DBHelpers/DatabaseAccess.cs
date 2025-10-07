@@ -1,4 +1,4 @@
-﻿using DapperCoreLib;
+﻿using Internal.Dapper;
 using Microsoft.Data.SqlClient;
 using MySql.Data.MySqlClient;
 using MySqlX.XDevAPI.Common;
@@ -10,13 +10,13 @@ using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
-using static DapperCoreLib.SqlMapper;
-namespace LibDotNet.DBHelpers
+using static Internal.Dapper.SqlMapper;
+namespace Libs.DBHelpers
 {
     /// <summary>
     /// Access multiple database Sql Server
     /// </summary>
-    /// <typeparam name="T">Type of DatabaseTypeBase: DatabaseSqlServer, DatabaseMySql,DatabasePostgreSql,DatabaseOracle </typeparam>
+    /// <typeparam name="TDB">Type of DatabaseTypeBase: DatabaseSqlServer, DatabaseMySql,DatabasePostgreSql,DatabaseOracle </typeparam>
     public static class DatabaseAccess<TDB> where TDB : DatabaseTypeBase, new()
     {
         private static DbConnection CreateConnection(string connectionString)

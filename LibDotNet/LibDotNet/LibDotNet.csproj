@@ -13,6 +13,7 @@
 		<Obfuscate>true</Obfuscate>
 		<ObfuscationPreset>maximum</ObfuscationPreset>
 		<ObfuscationConfig>obfuscar.xml</ObfuscationConfig>
+		<RootNamespace>Libs</RootNamespace>
 	</PropertyGroup>
 
 	<Target Name="Obfuscate" AfterTargets="Build" Condition="'$(Configuration)'=='Release'">
@@ -36,14 +37,22 @@
 		<Optimize>True</Optimize>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.1|AnyCPU'">
+	  <FileAlignment>8192</FileAlignment>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.1|AnyCPU'">
+	  <FileAlignment>8192</FileAlignment>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
 		<PackageReference Include="MySql.Data" Version="9.4.0" />
 		<PackageReference Include="NLog" Version="6.0.4" />
 		<PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.9.1" />
-		<PackageReference Include="System.Drawing.Common" Version="9.0.9" />
-		<PackageReference Include="Topshelf.Log4Net" Version="4.3.0" />
+		<PackageReference Include="System.Drawing.Common" Version="6.0.0" />
+		<PackageReference Include="Topshelf" Version="4.3.0" />
 		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.9" />
 		<PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
 		<PackageReference Include="Npgsql" Version="8.0.7" />

@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Reflection;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
 
 

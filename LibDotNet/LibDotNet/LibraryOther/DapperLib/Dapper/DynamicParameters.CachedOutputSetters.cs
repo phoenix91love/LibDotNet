@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     internal partial class DynamicParameters
     {

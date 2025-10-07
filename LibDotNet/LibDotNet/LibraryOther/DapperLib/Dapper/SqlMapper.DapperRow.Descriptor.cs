@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     internal static partial class SqlMapper
     {

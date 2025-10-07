@@ -2,7 +2,7 @@
 using System.Data.Common;
 using System.Text.RegularExpressions;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     internal static class OracleValueConverter
     {

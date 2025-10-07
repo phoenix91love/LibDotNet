@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     /// <summary>
     /// Additional state flags that control command behaviour

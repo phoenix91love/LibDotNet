@@ -33,54 +33,6 @@ namespace Libs.Images
             catch { throw; }
         }
 
-        /// <summary>resize the jpeg image</summary>
-        /// <param name="sourcePath">valid source image path</param>
-        /// <param name="destPath">destination image path that saved image there</param>
-        /// <param name="width">width that image resized to them</param>
-        /// <param name="height">height that image resized to them</param>
-        /// <param name="compress">compress image if that true</param>
-        /// <returns>return true if do correctly else return false</returns>
-        public static bool ResizeJpeg(string sourcePath, string destPath, int width, int height, bool compress = false)
-        {
-            try
-            {
-                if (String.IsNullOrEmpty(sourcePath) || String.IsNullOrEmpty(destPath) || width <= 0 || height <= 0) return false;
-                using (WebP webp = new WebP())
-                {
-                    Bitmap bmp = new Bitmap(sourcePath);
-                    var webp_byte = webp.EncodeLossless(bmp);
-                    bmp = compress ? webp.GetThumbnailFast(webp_byte, width, height) : webp.GetThumbnailQuality(webp_byte, width, height);
-                    bmp.Save(destPath, ImageFormat.Jpeg);
-                }
-                return true;
-            }
-            catch { throw; }
-        }
-
-        /// <summary>resize the png image</summary>
-        /// <param name="sourcePath">valid source image path</param>
-        /// <param name="destPath">destination image path that saved image there</param>
-        /// <param name="width">width that image resized to them</param>
-        /// <param name="height">height that image resized to them</param>
-        /// <param name="compress">compress image if that true</param>
-        /// <returns>return true if do correctly else return false</returns>
-        public static bool ResizePng(string sourcePath, string destPath, int width, int height, bool compress = false)
-        {
-            try
-            {
-                if (String.IsNullOrEmpty(sourcePath) || String.IsNullOrEmpty(destPath) || width <= 0 || height <= 0) return false;
-                using (WebP webp = new WebP())
-                {
-                    Bitmap bmp = new Bitmap(sourcePath);
-                    var webp_byte = webp.EncodeLossless(bmp);
-                    bmp = compress ? webp.GetThumbnailFast(webp_byte, width, height) : webp.GetThumbnailQuality(webp_byte, width, height);
-                    bmp.Save(destPath, ImageFormat.Png);
-                }
-                return true;
-            }
-            catch { throw; }
-        }
-
         /// <summary>convert jpeg image to webp</summary>
         /// <param name="sourcePath">valid source image path</param>
         /// <param name="destPath">destination image path that saved image there</param> 

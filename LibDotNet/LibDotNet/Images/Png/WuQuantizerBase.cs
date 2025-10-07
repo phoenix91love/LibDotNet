@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Libs.Images
 {
-    public abstract class WuQuantizerBase
+    internal abstract class WuQuantizerBase
     {
         protected const int Alpha = 3;
         protected const int Red = 2;
@@ -20,8 +20,8 @@ namespace Libs.Images
         private const int SideSize = MaxSideIndex + 1;
 
         // The following 2 methods are kept for compatibility.
-        public Image QuantizeImage(Bitmap image) { return this.QuantizeImage(image, 10, 70, 256); }
-        public Image QuantizeImage(Bitmap image, int alphaThreshold, int alphaFader) { return this.QuantizeImage(image, alphaThreshold, alphaFader, 256); }
+        public Image QuantizeImage(Bitmap image) =>this.QuantizeImage(image, 10, 70, 256); 
+        public Image QuantizeImage(Bitmap image, int alphaThreshold, int alphaFader) => this.QuantizeImage(image, alphaThreshold, alphaFader, 256); 
 
         public Image QuantizeImage(Bitmap image, int alphaThreshold = 10, int alphaFader = 70, int maxColors = 256)
         {

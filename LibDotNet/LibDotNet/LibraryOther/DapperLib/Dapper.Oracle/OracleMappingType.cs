@@ -1,4 +1,4 @@
-﻿namespace DapperCoreLib
+﻿namespace Internal.Dapper
 {
     /// <summary>
     /// BulkMapping enum to map Collection type for parameter when using PL/Sql associative arrays without referencing oracle directly.

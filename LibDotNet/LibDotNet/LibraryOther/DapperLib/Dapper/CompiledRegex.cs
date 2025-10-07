@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace DapperCoreLib;
+namespace Internal.Dapper;
 
 internal static partial class CompiledRegex
 {

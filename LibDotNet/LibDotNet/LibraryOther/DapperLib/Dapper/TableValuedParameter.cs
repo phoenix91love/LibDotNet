@@ -1,6 +1,6 @@
 ﻿using System.Data;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     /// <summary>
     /// Used to pass a DataTable as a TableValuedParameter

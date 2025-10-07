@@ -1,11 +1,10 @@
-﻿using Libs.Helpers;
-using NLog;
+﻿using NLog;
 using NLog.Config;
 using NLog.Targets;
 using System;
 using System.Collections.Concurrent;
 using System.Text;
-namespace LibDotNet.Helper
+namespace Libs.Helpers
 {
     public static class LogWriters<T> where T : class
     {

@@ -1,8 +1,9 @@
-﻿using LibDotNet.DBHelpers;
-using LibDotNet.Helper;
+﻿using Libs.DBHelpers;
+using Libs.Helper;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Threading.Tasks;
-
+using Libs.Images;
 namespace Test
 {
     internal class Program
@@ -11,11 +12,15 @@ namespace Test
         {
 
             const string sqlServerConn = "Server=.;Database=Test;Trusted_Connection=true;";
+           
+
+
 
             string connectionOracle = "Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=192.168.1.99)(PORT=1528))(CONNECT_DATA=(SERVICE_NAME=DATATEST)));User Id=system;Password=admin123;";
             // Query đơn giản
             try
             {
+                QualityImage<TypePng>.ChangeTo(@"C:\Users\phoen\Downloads\evernight-honkai-5120x2880-24123.webp", @"C:\Users\phoen\Downloads\evernight-honkai-5120x2880-24123.jpg", quality: 100);
                 var users = await DatabaseAccess<DatabaseOracle>
                 .QueryAsync<regions, regions, regions>(connectionOracle, "USERSAPAPP.GetRegion");
             }

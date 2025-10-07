@@ -1,4 +1,4 @@
-﻿using DapperCoreLib;
+﻿using Internal.Dapper;
 using Microsoft.Data.SqlClient;
 using MySql.Data.MySqlClient;
 using Npgsql;
@@ -10,7 +10,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace LibDotNet.DBHelpers
+namespace Libs.DBHelpers
 {
     /// <summary>
     /// Access multiple database Sql Server by transaction

@@ -2,7 +2,7 @@
 using System;
 using System.Data;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     /// <summary>
     /// Contains mapping between a property on T and a database query parameter

@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace DapperCoreLib
+namespace Internal.Dapper
 {
     /// <summary>
     /// A bag of parameters that can be passed to the Dapper Query and Execute methods
