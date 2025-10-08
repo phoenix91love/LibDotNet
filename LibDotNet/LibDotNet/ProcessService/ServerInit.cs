@@ -13,12 +13,12 @@ namespace Libs.ProcessServices
             var cts = new CancellationTokenSource();
             HostFactory.Run(hostConfigurator =>
             {
+                hostConfigurator.SetInstanceName(ServiceName);
                 hostConfigurator.SetServiceName(ServiceName);
                 hostConfigurator.SetDisplayName(string.IsNullOrEmpty(DisplayName) ? ServiceName : DisplayName);
                 hostConfigurator.SetDescription(string.IsNullOrEmpty(Description) ? ServiceName : Description);
                 hostConfigurator.StartAutomatically();
                 hostConfigurator.RunAsLocalSystem();
-                
                 hostConfigurator.Service<ProcessRunner>(service =>
                 {
                     service.ConstructUsing(name => new ProcessRunner(processess, cts.Token));
@@ -26,6 +26,7 @@ namespace Libs.ProcessServices
                     service.WhenStopped(_ => _.Stop());
                 });
                 hostConfigurator.OnException(ex => { LogWriters<ServerInit>.Error(ex.Message, ex); });
+                
             });
         }
     }

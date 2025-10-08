@@ -19,7 +19,7 @@ namespace Libs.Images
             };
         }
 
-        internal static void Save(this Bitmap bitmap, string filePath, ImageFormat format, int quality = 90)
+        internal static void Save(this Bitmap bitmap, string filePath, ImageFormat format, int quality = 100)
         {
             var encoder = GetEncoder(format);
             if (encoder != null && quality < 100)
@@ -94,7 +94,7 @@ namespace Libs.Images
             {
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 graphics.SmoothingMode = SmoothingMode.HighQuality;
-                graphics.PixelOffsetMode =PixelOffsetMode.HighQuality;
+                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
                 graphics.CompositingQuality = CompositingQuality.HighQuality;
             }
 

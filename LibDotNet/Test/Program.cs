@@ -1,9 +1,10 @@
 ﻿using Libs.DBHelpers;
-using Libs.Helper;
+using Libs.Images;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Threading.Tasks;
-using Libs.Images;
 namespace Test
 {
     internal class Program
@@ -12,7 +13,7 @@ namespace Test
         {
 
             const string sqlServerConn = "Server=.;Database=Test;Trusted_Connection=true;";
-           
+
 
 
 
@@ -20,7 +21,8 @@ namespace Test
             // Query đơn giản
             try
             {
-                QualityImage<TypePng>.ChangeTo(@"C:\Users\phoen\Downloads\evernight-honkai-5120x2880-24123.webp", @"C:\Users\phoen\Downloads\evernight-honkai-5120x2880-24123.jpg", quality: 100);
+                var image = Image.FromFile(@"C:\Users\phoen\Downloads\evernight-honkai-5120x2880-24123.jpg");
+
                 var users = await DatabaseAccess<DatabaseOracle>
                 .QueryAsync<regions, regions, regions>(connectionOracle, "USERSAPAPP.GetRegion");
             }
@@ -58,7 +60,14 @@ namespace Test
                     return new regions();
                 });
         }
-
+        public static byte[] CopyImageToByteArray(Image theImage)
+        {
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                theImage.Save(memoryStream, theImage.RawFormat);
+                return memoryStream.ToArray();
+            }
+        }
     }
     public class regions
     {

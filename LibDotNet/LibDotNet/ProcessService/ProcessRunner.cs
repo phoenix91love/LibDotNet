@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Libs.Helpers;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,12 +22,12 @@ namespace Libs.ProcessServices
             {
                 try
                 {
-                    // SingletonProvider<LogWriter>.Instance.WriterLogInfo($"ProcessRunner Start {process.ProcessName}");
+                    LogWriters<ProcessRunner>.Info($"ProcessRunner Start {process.ProcessName}");
                     Task.Run(process.ProcessInit, _cts.Token);
                 }
                 catch (Exception ex)
                 {
-                    //SingletonProvider<LogWriter>.Instance.WriterLogError($"ProcessRunner Start {process.ProcessName}", ex);
+                    LogWriters<ProcessRunner>.Error($"ProcessRunner Start {process.ProcessName}", ex);
                 }
 
             }
