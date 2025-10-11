@@ -51,6 +51,45 @@ namespace Libs.RedisHelper
                 UseTransaction = transaction
             };
         }
+        public static RedisOperationConfig WithExpiry(TimeSpan expiry, bool sliding = false)
+        {
+            return new RedisOperationConfig
+            {
+                UseBatch = true,
+                BatchSize = 100,
+                AutoExecute = true,
+                DefaultExpiry = expiry,
+                SlidingExpiration = sliding
+            };
+        }
+
+        public static RedisOperationConfig ShortLived => new RedisOperationConfig
+        {
+            UseBatch = true,
+            DefaultExpiry = TimeSpan.FromMinutes(30),
+            SlidingExpiration = true
+        };
+
+        public static RedisOperationConfig Session => new RedisOperationConfig
+        {
+            UseBatch = true,
+            DefaultExpiry = TimeSpan.FromHours(2),
+            SlidingExpiration = true
+        };
+
+        public static RedisOperationConfig Cache => new RedisOperationConfig
+        {
+            UseBatch = true,
+            DefaultExpiry = TimeSpan.FromMinutes(10),
+            SlidingExpiration = false
+        };
+
+        public static RedisOperationConfig Permanent => new RedisOperationConfig
+        {
+            UseBatch = true,
+            DefaultExpiry = null, // No expiry
+            SlidingExpiration = false
+        };
     }
 
 }

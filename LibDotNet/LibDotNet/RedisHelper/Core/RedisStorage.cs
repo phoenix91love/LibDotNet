@@ -35,7 +35,7 @@ namespace Libs.RedisHelper
         {
             if (_currentPipeline == null)
             {
-                _currentPipeline = new RedisPipelineManager(_db, Config);
+                _currentPipeline = new RedisPipelineManager(_db,_key, Config);
             }
             return _currentPipeline;
         }
@@ -46,6 +46,12 @@ namespace Libs.RedisHelper
             {
                 await _currentPipeline.ExecuteAsync();
                 _currentPipeline = null;
+
+                // Apply expiry sau khi execute pipeline
+                if (Config.DefaultExpiry.HasValue)
+                {
+                    await ApplyExpiryAsync();
+                }
             }
         }
 
@@ -216,6 +222,77 @@ namespace Libs.RedisHelper
         protected string Serialize(T obj) => JsonSerializer.Serialize(obj, _jsonOptions);
         protected T Deserialize(string json) => JsonSerializer.Deserialize<T>(json, _jsonOptions);
         protected string GetItemId(T item) => typeof(T).GetProperty("Id")?.GetValue(item)?.ToString();
+
+        #region Expiry Methods
+        // Set expiry cho key
+        public async Task<RedisStorage<T>> ExpireAsync(TimeSpan expiry)
+        {
+            await ExecutePipelineIfNeeded();
+            await _db.KeyExpireAsync(_key, expiry);
+            return this;
+        }
+
+        public async Task<RedisStorage<T>> ExpireAtAsync(DateTime expiryAt)
+        {
+            await ExecutePipelineIfNeeded();
+            await _db.KeyExpireAsync(_key, expiryAt);
+            return this;
+        }
+
+        // Get remaining TTL
+        public async Task<TimeSpan?> GetTimeToLiveAsync()
+        {
+            await ExecutePipelineIfNeeded();
+            return await _db.KeyTimeToLiveAsync(_key);
+        }
+
+        // Remove expiry (persist key)
+        public async Task<RedisStorage<T>> PersistAsync()
+        {
+            await ExecutePipelineIfNeeded();
+            await _db.KeyPersistAsync(_key);
+            return this;
+        }
+
+        // Check if key has expiry
+        public async Task<bool> HasExpiryAsync()
+        {
+            var ttl = await GetTimeToLiveAsync();
+            return ttl.HasValue;
+        }
+
+        // Apply expiry từ config
+        protected async Task ApplyExpiryAsync()
+        {
+            if (Config.DefaultExpiry.HasValue)
+            {
+                await _db.KeyExpireAsync(_key, Config.DefaultExpiry.Value);
+            }
+        }
+
+        // Apply expiry với sliding expiration
+        protected async Task ApplySlidingExpiryAsync()
+        {
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await _db.KeyExpireAsync(_key, Config.DefaultExpiry.Value);
+            }
+        }
+
+        // Apply expiry timestamp từ object property
+        protected void ApplyExpiryTracking(T item)
+        {
+            if (Config.DefaultExpiry.HasValue)
+            {
+                var expiryProperty = typeof(T).GetProperty(Config.ExpiryTimestampProperty);
+                if (expiryProperty != null && expiryProperty.CanWrite)
+                {
+                    var expiryAt = DateTime.Now.Add(Config.DefaultExpiry.Value);
+                    expiryProperty.SetValue(item, expiryAt);
+                }
+            }
+        }
+        #endregion
     }
 
 }

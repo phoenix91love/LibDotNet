@@ -15,120 +15,89 @@ namespace Test
             {
                 var redis = new RedisService(await ConnectionMultiplexer.ConnectAsync("localhost"));
 
-                Console.WriteLine("=== COMPLETE STORAGE TYPES DEMO (FIXED) ===");
+                Console.WriteLine("=== ALL STORAGE TYPES EXPIRY DEMO ===");
 
-                var products = GenerateTestProducts(10);
+                var products = GenerateTestProducts(3);
 
-                // 1. STRING STORAGE - ĐÃ SỬA LỖI
-                Console.WriteLine("\n1. STRING STORAGE (FIXED):");
+                // 1. HASH STORAGE với EXPIRY
+                Console.WriteLine("\n1. HASH STORAGE với EXPIRY:");
 
-                // Store single object
-                await redis.String<Product>("product:single")
-                    .I(products[0]);
+                await redis.Hash<Product>("demo:hash:expiry")
+                    .Session() // 2 hours sliding
+                    .Insert(products, p => p.Id.ToString());
 
-                var singleProduct = await redis.String<Product>("product:single").G();
+                var hashTTL = await redis.Hash<Product>("demo:hash:expiry").TTL();
+                Console.WriteLine($"Hash storage TTL: {hashTTL?.TotalSeconds} seconds");
 
-                // Store collection - ĐÃ KHÔNG CÒN LỖI
-                await redis.String<List<Product>>("products:collection")
-                    .I(products);
+                // 2. LIST STORAGE với EXPIRY
+                Console.WriteLine("\n2. LIST STORAGE với EXPIRY:");
 
-                var collection = await redis.String<List<Product>>("products:collection").G();
-                Console.WriteLine($"Product collection: {collection?.Count} items");
+                await redis.List<Product>("demo:list:expiry")
+                    .Cache() // 10 minutes fixed
+                    .Insert(products);
 
-                // 2. INDIVIDUAL STORAGE
-                Console.WriteLine("\n2. INDIVIDUAL STORAGE:");
-                await redis.Individual<Product>("products:individual")
-                    .I(products, p => p.Id.ToString());
+                var listTTL = await redis.List<Product>("demo:list:expiry").TTLKey("") ;
+                Console.WriteLine($"List storage TTL: {listTTL?.TotalSeconds} seconds");
 
-                var individualCount = await redis.Individual<Product>("products:individual").C();
-                Console.WriteLine($"Individual storage: {individualCount} items");
+                // 3. STRING STORAGE với EXPIRY
+                Console.WriteLine("\n3. STRING STORAGE với EXPIRY:");
 
-                // 3. HASH STORAGE
-                Console.WriteLine("\n3. HASH STORAGE:");
-                await redis.Hash<Product>("products:hash")
-                    .I(products, p => p.Id.ToString());
+                // Single object
+                await redis.String<Product>("demo:string:single:expiry")
+                    .ShortLived() // 30 minutes sliding
+                    .Insert(products[0]);
 
-                var hashCount = await redis.Hash<Product>("products:hash").C();
-                Console.WriteLine($"Hash storage: {hashCount} items");
+                var stringSingleTTL = await redis.String<Product>("demo:string:single:expiry").TTL();
+                Console.WriteLine($"String single TTL: {stringSingleTTL?.TotalSeconds} seconds");
 
-                // 4. LIST STORAGE
-                Console.WriteLine("\n4. LIST STORAGE:");
-                await redis.List<Product>("products:list")
-                    .I(products);
+                // Collection
+                await redis.String<List<Product>>("demo:string:collection:expiry")
+                    .Expiry(TimeSpan.FromHours(1))
+                    .Insert(products);
 
-                var listCount = await redis.List<Product>("products:list").C();
-                Console.WriteLine($"List storage: {listCount} items");
+                var stringCollectionTTL = await redis.String<List<Product>>("demo:string:collection:expiry").HighPerf().TTL();
+                Console.WriteLine($"String collection TTL: {stringCollectionTTL?.TotalSeconds} seconds");
 
-                // 5. CRUD OPERATIONS CHO TẤT CẢ STORAGE TYPES
-                Console.WriteLine("\n5. COMPLETE CRUD OPERATIONS:");
+                // 4. INDIVIDUAL STORAGE với EXPIRY
+                Console.WriteLine("\n4. INDIVIDUAL STORAGE với EXPIRY:");
 
-                // INSERT
-                await redis.Hash<Product>("test:hash").I(products[0], "1");
-                await redis.List<Product>("test:list").I(products[0]);
-                await redis.String<Product>("test:string").I(products[0]);
-                await redis.Individual<Product>("test:individual").I(products[0], "1");
+                await redis.Individual<Product>("demo:individual:expiry")
+                    .Session()
+                    .Insert(products, p => p.Id.ToString());
 
-                // GET
-                var fromHash = await redis.Hash<Product>("test:hash").G("1");
-                var fromList = await redis.List<Product>("test:list").At(0);
-                var fromString = await redis.String<Product>("test:string").G();
-                var fromIndividual = await redis.Individual<Product>("test:individual").G("1");
+                var individualKeyTTL = await redis.Individual<Product>("demo:individual:expiry").TTLKey("1");
+                Console.WriteLine($"Individual key TTL: {individualKeyTTL?.TotalSeconds} seconds");
 
-                Console.WriteLine($"Retrieved from all storage types successfully");
+                // 5. SLIDING EXPIRY VERIFICATION
+                Console.WriteLine("\n5. SLIDING EXPIRY VERIFICATION:");
 
-                // UPDATE
-                await redis.Hash<Product>("test:hash").U("1", p => p.Name = "Updated");
-                await redis.List<Product>("test:list").U("1", p => p.Name = "Updated");
-                await redis.Individual<Product>("test:individual").U("1", p => p.Name = "Updated");
+                var initialHashTTL = await redis.Hash<Product>("demo:hash:expiry").TTL();
+                Console.WriteLine($"Initial hash TTL: {initialHashTTL?.TotalSeconds} seconds");
 
-                // DELETE
-                await redis.Hash<Product>("test:hash").D("1");
-                await redis.List<Product>("test:list").D("1");
-                await redis.String<Product>("test:string").D("1");
-                await redis.Individual<Product>("test:individual").D("1");
+                // Access data - should renew expiry
+                await Task.Delay(1000);
+                var data = await redis.Hash<Product>("demo:hash:expiry").Get("1");
+                var afterAccessTTL = await redis.Hash<Product>("demo:hash:expiry").TTL();
 
-                Console.WriteLine("CRUD operations completed successfully");
+                Console.WriteLine($"After access TTL: {afterAccessTTL?.TotalSeconds} seconds");
+                Console.WriteLine($"Sliding expiry working: {afterAccessTTL?.TotalSeconds > initialHashTTL?.TotalSeconds}");
 
-                // 6. PIPELINE OPTIMIZATION
-                Console.WriteLine("\n6. PIPELINE OPTIMIZATION:");
+                // 6. FIXED EXPIRY VERIFICATION (List storage)
+                Console.WriteLine("\n6. FIXED EXPIRY VERIFICATION:");
 
-                await redis.Hash<Product>("pipeline:hash")
-                    .HighPerf()
-                    .I(products, p => p.Id.ToString());
+                var initialListTTL = await redis.List<Product>("demo:list:expiry").TTL();
+                Console.WriteLine($"Initial list TTL: {initialListTTL?.TotalSeconds} seconds");
 
-                await redis.List<Product>("pipeline:list")
-                    .HighPerf()
-                    .I(products);
+                // Access data - should NOT renew expiry (fixed)
+                await Task.Delay(1000);
+                var listData = await redis.List<Product>("demo:list:expiry").GetAll();
+                var afterListAccessTTL = await redis.List<Product>("demo:list:expiry").TTL();
 
-                await redis.String<List<Product>>("pipeline:string")
-                    .HighPerf()
-                    .I(products);
+                Console.WriteLine($"After list access TTL: {afterListAccessTTL?.TotalSeconds} seconds");
+                Console.WriteLine($"Fixed expiry maintained: {afterListAccessTTL?.TotalSeconds < initialListTTL?.TotalSeconds}");
 
-                await redis.Individual<Product>("pipeline:individual")
-                    .HighPerf()
-                    .I(products, p => p.Id.ToString());
-
-                Console.WriteLine("Pipeline optimization completed");
-
-                // CLEANUP
-                Console.WriteLine("\n7. CLEANUP:");
-
-                await redis.Delete("product:single");
-                await redis.Delete("products:collection");
-
-                await redis.Delete("products:hash");
-                await redis.Delete("products:list");
-                await redis.Delete("test:hash");
-                await redis.Delete("test:list");
-                await redis.Delete("test:string");
-
-                await redis.Delete("pipeline:hash");
-                await redis.Delete("pipeline:list");
-                await redis.Delete("pipeline:string");
-
-                Console.WriteLine("Cleanup completed");
-                //await redis.Individual<Product>("pipeline:individual").ClearAll();
-                Console.WriteLine("\n=== ALL STORAGE TYPES WORKING CORRECTLY ===");
+                // 7. EXPIRY MAINTENANCE ON OPERATIONS
+                Console.WriteLine("\n7. EXPIRY MAINTENANCE ON OPER");
             }
             catch (System.Exception ex)
             {

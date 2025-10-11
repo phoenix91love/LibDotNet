@@ -8,16 +8,58 @@ using System.Threading.Tasks;
 
 namespace Libs.RedisHelper
 {
-
     public class RedisListStorage<T> : RedisStorage<T> where T : class, new()
     {
         public RedisListStorage(IDatabase db, string key) : base(db, key) { }
 
-        #region INSERT Operations
+        #region INSERT Operations với Expiry
+        protected override Task InsertInPipeline(IBatch batch, T item, string itemId)
+        {
+            ApplyTracking(item);
+            ApplyExpiryTracking(item);
+            var task = batch.ListRightPushAsync(_key, Serialize(item));
+
+            // ✅ Apply expiry cho list
+            if (Config.DefaultExpiry.HasValue)
+            {
+                return Task.WhenAll(task, batch.KeyExpireAsync(_key, Config.DefaultExpiry.Value));
+            }
+
+            return task;
+        }
+
+        protected override Task InsertAllInPipeline(IBatch batch, IEnumerable<T> items, Func<T, string> getId)
+        {
+            var itemList = items.ToList();
+            var values = itemList.Select(item =>
+            {
+                ApplyTracking(item);
+                ApplyExpiryTracking(item);
+                return (RedisValue)Serialize(item);
+            }).ToArray();
+
+            var task = values.Length > 0 ? batch.ListRightPushAsync(_key, values) : Task.CompletedTask;
+
+            // ✅ Apply expiry cho entire list
+            if (Config.DefaultExpiry.HasValue)
+            {
+                return Task.WhenAll(task, batch.KeyExpireAsync(_key, Config.DefaultExpiry.Value));
+            }
+
+            return task;
+        }
+
         public override async Task<RedisStorage<T>> InsertAsync(T item, string itemId = null)
         {
             AddToPipeline(batch => InsertInPipeline(batch, item, itemId));
             await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry trên INSERT operations
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
             return this;
         }
 
@@ -31,35 +73,15 @@ namespace Libs.RedisHelper
             }
 
             await ExecutePipelineIfNeeded();
-            return this;
-        }
 
-        protected override Task InsertInPipeline(IBatch batch, T item, string itemId)
-        {
-            ApplyTracking(item);
-            return batch.ListRightPushAsync(_key, Serialize(item));
-        }
-
-        protected override Task InsertAllInPipeline(IBatch batch, IEnumerable<T> items, Func<T, string> getId)
-        {
-            var itemList = items.ToList();
-            var values = itemList.Select(item =>
+            // ✅ Apply sliding expiry
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
             {
-                ApplyTracking(item);
-                return (RedisValue)Serialize(item);
-            }).ToArray();
+                await ApplySlidingExpiryAsync();
+            }
 
-            return values.Length > 0 ? batch.ListRightPushAsync(_key, values) : Task.CompletedTask;
-        }
-
-        // Additional insert methods
-        public async Task<RedisStorage<T>> InsertLeftAsync(T item)
-        {
-            AddToPipeline(batch => batch.ListLeftPushAsync(_key, Serialize(item)));
-            await ExecutePipelineIfNeeded();
             return this;
         }
-
         public async Task<RedisStorage<T>> InsertAtAsync(int index, T item)
         {
             // For list, we need to handle insert at specific position
@@ -74,7 +96,23 @@ namespace Libs.RedisHelper
         }
         #endregion
 
-        #region UPDATE Operations
+        #region UPDATE Operations với Expiry
+        protected override Task UpdateInPipeline(IBatch batch, T item, string itemId)
+        {
+            // For list storage, update is handled via index replacement
+            ApplyTracking(item);
+            ApplyExpiryTracking(item);
+
+            // This will be handled in the UpdateAsync method
+            return Task.CompletedTask;
+        }
+
+        protected override Task UpdateAllInPipeline(IBatch batch, IEnumerable<T> items, Func<T, string> getId)
+        {
+            // For list, we replace the entire list, so we handle expiry there
+            return Task.CompletedTask;
+        }
+
         public override async Task<RedisStorage<T>> UpdateAsync(T item, string itemId = null)
         {
             // For list storage, we need to find and replace the item
@@ -83,21 +121,20 @@ namespace Libs.RedisHelper
 
             if (index >= 0)
             {
-                AddToPipeline(batch => batch.ListSetByIndexAsync(_key, index, Serialize(item)));
+                AddToPipeline(batch =>
+                {
+                    ApplyTracking(item);
+                    ApplyExpiryTracking(item);
+                    return batch.ListSetByIndexAsync(_key, index, Serialize(item));
+                });
+
+                // ✅ Apply expiry on update
+                if (Config.DefaultExpiry.HasValue)
+                {
+                    AddToPipeline(batch => batch.KeyExpireAsync(_key, Config.DefaultExpiry.Value));
+                }
+
                 await ExecutePipelineIfNeeded();
-            }
-            return this;
-        }
-
-        public override async Task<RedisStorage<T>> UpdateAsync(string itemId, Action<T> updateAction)
-        {
-            var currentItems = await GetAllAsync();
-            var item = currentItems.FirstOrDefault(i => GetItemId(i) == itemId);
-
-            if (item != null)
-            {
-                updateAction(item);
-                await UpdateAsync(item, itemId);
             }
             return this;
         }
@@ -109,19 +146,6 @@ namespace Libs.RedisHelper
             await InsertAllAsync(items, getId);
             return this;
         }
-
-        protected override Task UpdateInPipeline(IBatch batch, T item, string itemId)
-        {
-            // This is handled differently for lists - we use UpdateAsync override
-            return Task.CompletedTask;
-        }
-
-        protected override Task UpdateAllInPipeline(IBatch batch, IEnumerable<T> items, Func<T, string> getId)
-        {
-            // This is handled differently for lists - we use UpdateAllAsync override
-            return Task.CompletedTask;
-        }
-
         public async Task<RedisStorage<T>> UpdateAtAsync(int index, T item)
         {
             if (index >= 0)
@@ -133,7 +157,83 @@ namespace Libs.RedisHelper
         }
         #endregion
 
-        #region DELETE Operations
+        #region GET Operations với Sliding Expiry
+        public override async Task<T> GetAsync(string itemId)
+        {
+            await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry trên GET operations
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
+            var allItems = await GetAllAsync();
+            return allItems.FirstOrDefault(item => GetItemId(item) == itemId);
+        }
+
+        public override async Task<List<T>> GetAllAsync()
+        {
+            await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry trên GET operations
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
+            var values = await _db.ListRangeAsync(_key);
+            return values.Where(v => !v.IsNullOrEmpty)
+                        .Select(v => Deserialize(v))
+                        .Where(item => item != null)
+                        .ToList();
+        }
+
+        public async Task<T> GetAtAsync(int index)
+        {
+            await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
+            var value = await _db.ListGetByIndexAsync(_key, index);
+            return value.IsNullOrEmpty ? null : Deserialize(value);
+        }
+
+        public async Task<List<T>> GetRangeAsync(int start, int stop)
+        {
+            await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
+            var values = await _db.ListRangeAsync(_key, start, stop);
+            return values.Where(v => !v.IsNullOrEmpty)
+                        .Select(v => Deserialize(v))
+                        .Where(item => item != null)
+                        .ToList();
+        }
+        #endregion
+
+        #region DELETE Operations với Expiry Maintenance
+        protected override Task DeleteInPipeline(IBatch batch, string itemId)
+        {
+            // This is handled in DeleteAsync which finds and removes the specific item
+            return Task.CompletedTask;
+        }
+
+        protected override Task DeleteAllInPipeline(IBatch batch, IEnumerable<string> itemIds)
+        {
+            // This is handled in DeleteAllAsync
+            return Task.CompletedTask;
+        }
+
         public override async Task<RedisStorage<T>> DeleteAsync(string itemId)
         {
             var currentItems = await GetAllAsync();
@@ -143,6 +243,13 @@ namespace Libs.RedisHelper
             {
                 var json = Serialize(item);
                 AddToPipeline(batch => batch.ListRemoveAsync(_key, json));
+
+                // ✅ Maintain expiry on delete operations
+                if (Config.DefaultExpiry.HasValue)
+                {
+                    AddToPipeline(batch => batch.KeyExpireAsync(_key, Config.DefaultExpiry.Value));
+                }
+
                 await ExecutePipelineIfNeeded();
             }
             return this;
@@ -159,22 +266,15 @@ namespace Libs.RedisHelper
                 AddToPipeline(batch => batch.ListRemoveAsync(_key, json));
             }
 
+            // ✅ Maintain expiry
+            if (Config.DefaultExpiry.HasValue && itemsToRemove.Count > 0)
+            {
+                AddToPipeline(batch => batch.KeyExpireAsync(_key, Config.DefaultExpiry.Value));
+            }
+
             await ExecutePipelineIfNeeded();
             return this;
         }
-
-        protected override Task DeleteInPipeline(IBatch batch, string itemId)
-        {
-            // This is handled in DeleteAsync override
-            return Task.CompletedTask;
-        }
-
-        protected override Task DeleteAllInPipeline(IBatch batch, IEnumerable<string> itemIds)
-        {
-            // This is handled in DeleteAllAsync override
-            return Task.CompletedTask;
-        }
-
         public async Task<RedisStorage<T>> DeleteAtAsync(int index)
         {
             // For list, we set the value to null and then remove null values
@@ -201,10 +301,44 @@ namespace Libs.RedisHelper
             }
             return this;
         }
+        #endregion
+
+        #region List-specific Operations với Expiry
+        public async Task<RedisStorage<T>> InsertLeftAsync(T item)
+        {
+            AddToPipeline(batch =>
+            {
+                ApplyTracking(item);
+                ApplyExpiryTracking(item);
+                var task = batch.ListLeftPushAsync(_key, Serialize(item));
+
+                if (Config.DefaultExpiry.HasValue)
+                {
+                    return Task.WhenAll(task, batch.KeyExpireAsync(_key, Config.DefaultExpiry.Value));
+                }
+                return task;
+            });
+
+            await ExecutePipelineIfNeeded();
+
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
+            return this;
+        }
 
         public async Task<T> PopLeftAsync()
         {
             await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
             var value = await _db.ListLeftPopAsync(_key);
             return value.IsNullOrEmpty ? null : Deserialize(value);
         }
@@ -212,32 +346,47 @@ namespace Libs.RedisHelper
         public async Task<T> PopRightAsync()
         {
             await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
             var value = await _db.ListRightPopAsync(_key);
             return value.IsNullOrEmpty ? null : Deserialize(value);
         }
+
+        public async Task<RedisStorage<T>> TrimAsync(int start, int stop)
+        {
+            AddToPipeline(batch =>
+            {
+                var task = batch.ListTrimAsync(_key, start, stop);
+
+                // ✅ Maintain expiry on trim operations
+                if (Config.DefaultExpiry.HasValue)
+                {
+                    return Task.WhenAll(task, batch.KeyExpireAsync(_key, Config.DefaultExpiry.Value));
+                }
+                return task;
+            });
+
+            await ExecutePipelineIfNeeded();
+            return this;
+        }
         #endregion
 
-        #region GET Operations
-        public override async Task<T> GetAsync(string itemId)
-        {
-            await ExecutePipelineIfNeeded();
-            var allItems = await GetAllAsync();
-            return allItems.FirstOrDefault(item => GetItemId(item) == itemId);
-        }
-
-        public override async Task<List<T>> GetAllAsync()
-        {
-            await ExecutePipelineIfNeeded();
-            var values = await _db.ListRangeAsync(_key);
-            return values.Where(v => !v.IsNullOrEmpty)
-                        .Select(v => Deserialize(v))
-                        .Where(item => item != null)
-                        .ToList();
-        }
-
+        #region Utility Methods
         public override async Task<bool> ExistsAsync(string itemId)
         {
             await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
             var allItems = await GetAllAsync();
             return allItems.Any(item => GetItemId(item) == itemId);
         }
@@ -245,52 +394,21 @@ namespace Libs.RedisHelper
         public override async Task<long> CountAsync()
         {
             await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
             return await _db.ListLengthAsync(_key);
         }
 
-        public async Task<T> GetAtAsync(int index)
-        {
-            await ExecutePipelineIfNeeded();
-            var value = await _db.ListGetByIndexAsync(_key, index);
-            return value.IsNullOrEmpty ? null : Deserialize(value);
-        }
-
-        public async Task<List<T>> GetRangeAsync(int start, int stop)
-        {
-            await ExecutePipelineIfNeeded();
-            var values = await _db.ListRangeAsync(_key, start, stop);
-            return values.Where(v => !v.IsNullOrEmpty)
-                        .Select(v => Deserialize(v))
-                        .Where(item => item != null)
-                        .ToList();
-        }
-        #endregion
-
-        #region Utility Methods
-        public async Task<RedisStorage<T>> TrimAsync(int start, int stop)
-        {
-            AddToPipeline(batch => batch.ListTrimAsync(_key, start, stop));
-            await ExecutePipelineIfNeeded();
-            return this;
-        }
-
-        public async Task<RedisStorage<T>> ClearAsync()
+        public override async Task<RedisStorage<T>> ClearAsync()
         {
             await ExecutePipelineIfNeeded();
             await _db.KeyDeleteAsync(_key);
             return this;
-        }
-
-        public async Task<int> IndexOfAsync(string itemId)
-        {
-            var allItems = await GetAllAsync();
-            return allItems.FindIndex(item => GetItemId(item) == itemId);
-        }
-
-        public async Task<bool> ContainsAsync(T item)
-        {
-            var allItems = await GetAllAsync();
-            return allItems.Any(i => GetItemId(i) == GetItemId(item));
         }
         #endregion
     }

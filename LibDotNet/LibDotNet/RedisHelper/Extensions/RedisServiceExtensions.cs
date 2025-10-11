@@ -8,44 +8,44 @@ namespace Libs.RedisHelper
     public static class RedisServiceExtensions
     {
         // INSERT shortcuts
-        public static async Task<RedisStorage<T>> I<T>(this RedisStorage<T> storage, T item, string itemId = null) where T : class, new()
+        public static async Task<RedisStorage<T>> Insert<T>(this RedisStorage<T> storage, T item, string itemId = null) where T : class, new()
         {
             return await storage.InsertAsync(item, itemId);
         }
 
-        public static async Task<RedisStorage<T>> I<T>(this RedisStorage<T> storage, IEnumerable<T> items, Func<T, string> getId = null) where T : class, new()
+        public static async Task<RedisStorage<T>> Insert<T>(this RedisStorage<T> storage, IEnumerable<T> items, Func<T, string> getId = null) where T : class, new()
         {
             return await storage.InsertAllAsync(items, getId);
         }
 
         // UPDATE shortcuts
-        public static async Task<RedisStorage<T>> U<T>(this RedisStorage<T> storage, T item, string itemId = null) where T : class, new()
+        public static async Task<RedisStorage<T>> Update<T>(this RedisStorage<T> storage, T item, string itemId = null) where T : class, new()
         {
             return await storage.UpdateAsync(item, itemId);
         }
 
-        public static async Task<RedisStorage<T>> U<T>(this RedisStorage<T> storage, string itemId, Action<T> updateAction) where T : class, new()
+        public static async Task<RedisStorage<T>> Update<T>(this RedisStorage<T> storage, string itemId, Action<T> updateAction) where T : class, new()
         {
             return await storage.UpdateAsync(itemId, updateAction);
         }
 
-        public static async Task<RedisStorage<T>> U<T>(this RedisStorage<T> storage, IEnumerable<T> items, Func<T, string> getId = null) where T : class, new()
+        public static async Task<RedisStorage<T>> UpdateAll<T>(this RedisStorage<T> storage, IEnumerable<T> items, Func<T, string> getId = null) where T : class, new()
         {
             return await storage.UpdateAllAsync(items, getId);
         }
 
-        public static async Task<RedisStorage<T>> P<T>(this RedisStorage<T> storage, string itemId, string property, object value) where T : class, new()
+        public static async Task<RedisStorage<T>> UpdateProperties<T>(this RedisStorage<T> storage, string itemId, string property, object value) where T : class, new()
         {
             return await storage.UpdatePropertyAsync(itemId, property, value);
         }
 
         // DELETE shortcuts
-        public static async Task<RedisStorage<T>> D<T>(this RedisStorage<T> storage, string itemId) where T : class, new()
+        public static async Task<RedisStorage<T>> Delete<T>(this RedisStorage<T> storage, string itemId) where T : class, new()
         {
             return await storage.DeleteAsync(itemId);
         }
 
-        public static async Task<RedisStorage<T>> D<T>(this RedisStorage<T> storage, IEnumerable<string> itemIds) where T : class, new()
+        public static async Task<RedisStorage<T>> DeleteAll<T>(this RedisStorage<T> storage, IEnumerable<string> itemIds) where T : class, new()
         {
             return await storage.DeleteAllAsync(itemIds);
         }
@@ -56,28 +56,28 @@ namespace Libs.RedisHelper
         }
 
         // GET shortcuts
-        public static async Task<T> G<T>(this RedisStorage<T> storage, string itemId) where T : class, new()
+        public static async Task<T> Get<T>(this RedisStorage<T> storage, string itemId) where T : class, new()
         {
             return await storage.GetAsync(itemId);
         }
 
-        public static async Task<List<T>> G<T>(this RedisStorage<T> storage) where T : class, new()
+        public static async Task<List<T>> GetAll<T>(this RedisStorage<T> storage) where T : class, new()
         {
             return await storage.GetAllAsync();
         }
 
-        public static async Task<bool> E<T>(this RedisStorage<T> storage, string itemId) where T : class, new()
+        public static async Task<bool> Exist<T>(this RedisStorage<T> storage, string itemId) where T : class, new()
         {
             return await storage.ExistsAsync(itemId);
         }
 
-        public static async Task<long> C<T>(this RedisStorage<T> storage) where T : class, new()
+        public static async Task<long> Count<T>(this RedisStorage<T> storage) where T : class, new()
         {
             return await storage.CountAsync();
         }
 
         // QUERY shortcuts
-        public static async Task<List<T>> F<T>(this RedisStorage<T> storage, Func<T, bool> filter) where T : class, new()
+        public static async Task<List<T>> Where<T>(this RedisStorage<T> storage, Func<T, bool> filter) where T : class, new()
         {
             return await storage.WhereAsync(filter);
         }
@@ -104,7 +104,7 @@ namespace Libs.RedisHelper
         }
 
         // CONFIG shortcuts
-        public static RedisStorage<T> Txn<T>(this RedisStorage<T> storage) where T : class, new()
+        public static RedisStorage<T> Tran<T>(this RedisStorage<T> storage) where T : class, new()
         {
             storage.Config.UseTransaction = true;
             storage.Config.UseBatch = false;
@@ -132,7 +132,7 @@ namespace Libs.RedisHelper
         }
 
         // SPECIAL operations (Hash storage only)
-        public static async Task<RedisStorage<T>> US<T>(this RedisStorage<T> storage, T item, string itemId = null) where T : class, new()
+        public static async Task<RedisStorage<T>> UpdateOrInsert<T>(this RedisStorage<T> storage, T item, string itemId = null) where T : class, new()
         {
             if (storage is RedisHashStorage<T> hashStorage)
             {
@@ -141,7 +141,7 @@ namespace Libs.RedisHelper
             throw new NotSupportedException("Upsert only supported for Hash storage");
         }
 
-        public static async Task<RedisStorage<T>> Inc<T>(this RedisStorage<T> storage, string itemId, string property, long value = 1) where T : class, new()
+        public static async Task<RedisStorage<T>> Increment<T>(this RedisStorage<T> storage, string itemId, string property, long value = 1) where T : class, new()
         {
             if (storage is RedisHashStorage<T> hashStorage)
             {
@@ -150,7 +150,7 @@ namespace Libs.RedisHelper
             throw new NotSupportedException("Increment only supported for Hash storage");
         }
 
-        public static async Task<RedisStorage<T>> UIf<T>(this RedisStorage<T> storage, string itemId, Func<T, bool> condition, Action<T> updateAction) where T : class, new()
+        public static async Task<RedisStorage<T>> UpdateIf<T>(this RedisStorage<T> storage, string itemId, Func<T, bool> condition, Action<T> updateAction) where T : class, new()
         {
             if (storage is RedisHashStorage<T> hashStorage)
             {

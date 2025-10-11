@@ -12,11 +12,54 @@ namespace Libs.RedisHelper
     {
         public RedisStringStorage(IDatabase db, string key) : base(db, key) { }
 
-        #region INSERT Operations
+        #region INSERT Operations với Expiry
+        protected override Task InsertInPipeline(IBatch batch, T item, string itemId)
+        {
+            ApplyTracking(item);
+            ApplyExpiryTracking(item);
+            var task = batch.StringSetAsync(_key, Serialize(item));
+
+            // ✅ Apply expiry
+            if (Config.DefaultExpiry.HasValue)
+            {
+                return Task.WhenAll(task, batch.KeyExpireAsync(_key, Config.DefaultExpiry.Value));
+            }
+
+            return task;
+        }
+
+        protected override Task InsertAllInPipeline(IBatch batch, IEnumerable<T> items, Func<T, string> getId)
+        {
+            var itemList = items.ToList();
+            ApplyTrackingToAll(itemList);
+            foreach (var item in itemList)
+            {
+                ApplyExpiryTracking(item);
+            }
+
+            var json = JsonSerializer.Serialize(itemList, _jsonOptions);
+            var task = batch.StringSetAsync(_key, json);
+
+            // ✅ Apply expiry
+            if (Config.DefaultExpiry.HasValue)
+            {
+                return Task.WhenAll(task, batch.KeyExpireAsync(_key, Config.DefaultExpiry.Value));
+            }
+
+            return task;
+        }
+
         public override async Task<RedisStorage<T>> InsertAsync(T item, string itemId = null)
         {
             AddToPipeline(batch => InsertInPipeline(batch, item, itemId));
             await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
             return this;
         }
 
@@ -25,30 +68,65 @@ namespace Libs.RedisHelper
             var itemList = items.ToList();
             AddToPipeline(batch => InsertAllInPipeline(batch, itemList, getId));
             await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
             return this;
-        }
-
-        protected override Task InsertInPipeline(IBatch batch, T item, string itemId)
-        {
-            ApplyTracking(item);
-            return batch.StringSetAsync(_key, Serialize(item)); // ✅ Đúng: Serialize single item
-        }
-
-        protected override Task InsertAllInPipeline(IBatch batch, IEnumerable<T> items, Func<T, string> getId)
-        {
-            var itemList = items.ToList();
-            ApplyTrackingToAll(itemList);
-            // ✅ Sửa: Serialize entire list as JSON array
-            var json = JsonSerializer.Serialize(itemList, _jsonOptions);
-            return batch.StringSetAsync(_key, json);
         }
         #endregion
 
-        #region UPDATE Operations
+        #region UPDATE Operations với Expiry
+        protected override Task UpdateInPipeline(IBatch batch, T item, string itemId)
+        {
+            ApplyTracking(item);
+            ApplyExpiryTracking(item);
+            var task = batch.StringSetAsync(_key, Serialize(item));
+
+            // ✅ Apply expiry
+            if (Config.DefaultExpiry.HasValue)
+            {
+                return Task.WhenAll(task, batch.KeyExpireAsync(_key, Config.DefaultExpiry.Value));
+            }
+
+            return task;
+        }
+
+        protected override Task UpdateAllInPipeline(IBatch batch, IEnumerable<T> items, Func<T, string> getId)
+        {
+            var itemList = items.ToList();
+            ApplyTrackingToAll(itemList);
+            foreach (var item in itemList)
+            {
+                ApplyExpiryTracking(item);
+            }
+
+            var json = JsonSerializer.Serialize(itemList, _jsonOptions);
+            var task = batch.StringSetAsync(_key, json);
+
+            // ✅ Apply expiry
+            if (Config.DefaultExpiry.HasValue)
+            {
+                return Task.WhenAll(task, batch.KeyExpireAsync(_key, Config.DefaultExpiry.Value));
+            }
+
+            return task;
+        }
+
         public override async Task<RedisStorage<T>> UpdateAsync(T item, string itemId = null)
         {
             AddToPipeline(batch => UpdateInPipeline(batch, item, itemId));
             await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
             return this;
         }
 
@@ -68,38 +146,14 @@ namespace Libs.RedisHelper
             var itemList = items.ToList();
             AddToPipeline(batch => UpdateAllInPipeline(batch, itemList, getId));
             await ExecutePipelineIfNeeded();
-            return this;
-        }
 
-        public override async Task<RedisStorage<T>> UpdatePropertyAsync(string itemId, string propertyName, object value)
-        {
-            var currentItem = await GetAsync();
-            if (currentItem != null)
+            // ✅ Apply sliding expiry
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
             {
-                var property = typeof(T).GetProperty(propertyName);
-                if (property != null && property.CanWrite)
-                {
-                    property.SetValue(currentItem, value);
-                    ApplyTracking(currentItem);
-                    await UpdateAsync(currentItem, itemId);
-                }
+                await ApplySlidingExpiryAsync();
             }
+
             return this;
-        }
-
-        protected override Task UpdateInPipeline(IBatch batch, T item, string itemId)
-        {
-            ApplyTracking(item);
-            return batch.StringSetAsync(_key, Serialize(item)); // ✅ Đúng: Serialize single item
-        }
-
-        protected override Task UpdateAllInPipeline(IBatch batch, IEnumerable<T> items, Func<T, string> getId)
-        {
-            var itemList = items.ToList();
-            ApplyTrackingToAll(itemList);
-            // ✅ Sửa: Serialize entire list as JSON array
-            var json = JsonSerializer.Serialize(itemList, _jsonOptions);
-            return batch.StringSetAsync(_key, json);
         }
 
         // Special method for updating when storing collections
@@ -112,73 +166,33 @@ namespace Libs.RedisHelper
             {
                 updateAction(itemToUpdate);
                 ApplyTracking(itemToUpdate);
+                ApplyExpiryTracking(itemToUpdate);
 
                 // Update the entire collection
                 var json = JsonSerializer.Serialize(allItems, _jsonOptions);
                 await _db.StringSetAsync(_key, json);
+
+                // ✅ Apply expiry
+                if (Config.DefaultExpiry.HasValue)
+                {
+                    await _db.KeyExpireAsync(_key, Config.DefaultExpiry.Value);
+                }
             }
             return this;
         }
         #endregion
 
-        #region DELETE Operations
-        public override async Task<RedisStorage<T>> DeleteAsync(string itemId)
-        {
-            // For string storage storing single object, delete the entire key
-            AddToPipeline(batch => DeleteInPipeline(batch, itemId));
-            await ExecutePipelineIfNeeded();
-            return this;
-        }
-
-        public override async Task<RedisStorage<T>> DeleteAllAsync(IEnumerable<string> itemIds)
-        {
-            // For string storage storing collection, remove items from collection
-            var allItems = await GetAllAsync();
-            var updatedItems = allItems.Where(item => !itemIds.Contains(GetItemId(item))).ToList();
-
-            if (updatedItems.Count != allItems.Count)
-            {
-                var json = JsonSerializer.Serialize(updatedItems, _jsonOptions);
-                await _db.StringSetAsync(_key, json);
-            }
-            return this;
-        }
-
-        protected override Task DeleteInPipeline(IBatch batch, string itemId)
-        {
-            return batch.KeyDeleteAsync(_key);
-        }
-
-        protected override Task DeleteAllInPipeline(IBatch batch, IEnumerable<string> itemIds)
-        {
-            // This is handled in DeleteAllAsync
-            return Task.CompletedTask;
-        }
-
-        // Delete item from collection
-        public async Task<RedisStorage<T>> DeleteFromCollectionAsync(string itemId)
-        {
-            var allItems = await GetAllAsync();
-            var updatedItems = allItems.Where(item => GetItemId(item) != itemId).ToList();
-
-            var json = JsonSerializer.Serialize(updatedItems, _jsonOptions);
-            await _db.StringSetAsync(_key, json);
-
-            return this;
-        }
-
-        public async Task<RedisStorage<T>> ClearAsync()
-        {
-            await ExecutePipelineIfNeeded();
-            await _db.KeyDeleteAsync(_key);
-            return this;
-        }
-        #endregion
-
-        #region GET Operations
+        #region GET Operations với Sliding Expiry
         public override async Task<T> GetAsync(string itemId = null)
         {
             await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry trên GET operations
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
             var value = await _db.StringGetAsync(_key);
 
             if (value.IsNullOrEmpty)
@@ -207,6 +221,13 @@ namespace Libs.RedisHelper
         public override async Task<List<T>> GetAllAsync()
         {
             await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry trên GET operations
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
             var value = await _db.StringGetAsync(_key);
 
             if (value.IsNullOrEmpty)
@@ -232,18 +253,6 @@ namespace Libs.RedisHelper
             }
         }
 
-        public override async Task<bool> ExistsAsync(string itemId = null)
-        {
-            await ExecutePipelineIfNeeded();
-            return await _db.KeyExistsAsync(_key);
-        }
-
-        public override async Task<long> CountAsync()
-        {
-            var allItems = await GetAllAsync();
-            return allItems.Count;
-        }
-
         // Get specific item from collection
         public async Task<T> GetFromCollectionAsync(string itemId)
         {
@@ -252,7 +261,65 @@ namespace Libs.RedisHelper
         }
         #endregion
 
-        #region Utility Methods
+        #region DELETE Operations với Expiry
+        protected override Task DeleteInPipeline(IBatch batch, string itemId)
+        {
+            return batch.KeyDeleteAsync(_key);
+        }
+
+        protected override Task DeleteAllInPipeline(IBatch batch, IEnumerable<string> itemIds)
+        {
+            // This is handled in DeleteAllAsync
+            return Task.CompletedTask;
+        }
+
+        public override async Task<RedisStorage<T>> DeleteAsync(string itemId)
+        {
+            AddToPipeline(batch => DeleteInPipeline(batch, itemId));
+            await ExecutePipelineIfNeeded();
+            return this;
+        }
+
+        public override async Task<RedisStorage<T>> DeleteAllAsync(IEnumerable<string> itemIds)
+        {
+            // For string storage storing collection, remove items from collection
+            var allItems = await GetAllAsync();
+            var updatedItems = allItems.Where(item => !itemIds.Contains(GetItemId(item))).ToList();
+
+            if (updatedItems.Count != allItems.Count)
+            {
+                var json = JsonSerializer.Serialize(updatedItems, _jsonOptions);
+                await _db.StringSetAsync(_key, json);
+
+                // ✅ Maintain expiry
+                if (Config.DefaultExpiry.HasValue)
+                {
+                    await _db.KeyExpireAsync(_key, Config.DefaultExpiry.Value);
+                }
+            }
+            return this;
+        }
+
+        // Delete item from collection
+        public async Task<RedisStorage<T>> DeleteFromCollectionAsync(string itemId)
+        {
+            var allItems = await GetAllAsync();
+            var updatedItems = allItems.Where(item => GetItemId(item) != itemId).ToList();
+
+            var json = JsonSerializer.Serialize(updatedItems, _jsonOptions);
+            await _db.StringSetAsync(_key, json);
+
+            // ✅ Maintain expiry
+            if (Config.DefaultExpiry.HasValue)
+            {
+                await _db.KeyExpireAsync(_key, Config.DefaultExpiry.Value);
+            }
+
+            return this;
+        }
+        #endregion
+
+        #region Utility Methods với Expiry
         private void ApplyTrackingToAll(IEnumerable<T> items)
         {
             if (Config.EnableTracking)
@@ -274,6 +341,39 @@ namespace Libs.RedisHelper
             allItems.Add(item);
             var json = JsonSerializer.Serialize(allItems, _jsonOptions);
             await _db.StringSetAsync(_key, json);
+
+            // ✅ Maintain expiry
+            if (Config.DefaultExpiry.HasValue)
+            {
+                await _db.KeyExpireAsync(_key, Config.DefaultExpiry.Value);
+            }
+
+            return this;
+        }
+
+        public override async Task<bool> ExistsAsync(string itemId = null)
+        {
+            await ExecutePipelineIfNeeded();
+
+            // ✅ Apply sliding expiry
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await ApplySlidingExpiryAsync();
+            }
+
+            return await _db.KeyExistsAsync(_key);
+        }
+
+        public override async Task<long> CountAsync()
+        {
+            var allItems = await GetAllAsync();
+            return allItems.Count;
+        }
+
+        public override async Task<RedisStorage<T>> ClearAsync()
+        {
+            await ExecutePipelineIfNeeded();
+            await _db.KeyDeleteAsync(_key);
             return this;
         }
         #endregion

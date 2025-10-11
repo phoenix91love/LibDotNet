@@ -32,19 +32,7 @@ namespace Libs.RedisHelper
         public RedisStorage<T> Individual<T>(string key, RedisOperationConfig config = null) where T : class, new()
             => new RedisIndividualStorage<T>(_db, _redis, key) { Config = config ?? RedisConfig.Optimized };
 
-        // Shortcut methods
-        public RedisStorage<T> H<T>(string key, RedisOperationConfig config = null) where T : class, new()
-            => Hash<T>(key, config);
-
-        public RedisStorage<T> L<T>(string key, RedisOperationConfig config = null) where T : class, new()
-            => List<T>(key, config);
-
-        public RedisStorage<T> S<T>(string key, RedisOperationConfig config = null) where T : class, new()
-            => String<T>(key, config);
-
-        public RedisStorage<T> I<T>(string key, RedisOperationConfig config = null) where T : class, new()
-            => Individual<T>(key, config);
-
+     
         // Utility methods
         public async Task<bool> Exists(string key) => await _db.KeyExistsAsync(key);
         public async Task<bool> Delete(string key) => await _db.KeyDeleteAsync(key);

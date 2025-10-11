@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static Mysqlx.Expect.Open.Types.Condition.Types;
 
 namespace Libs.RedisHelper
 {
@@ -13,16 +14,31 @@ namespace Libs.RedisHelper
         private readonly List<Func<IBatch, Task>> _batchOperations;
         private readonly List<Func<ITransaction, Task>> _transactionOperations;
         private readonly RedisOperationConfig _config;
+        private readonly string _key;
         private bool _executed;
 
-        public RedisPipelineManager(IDatabase db, RedisOperationConfig config)
+        public RedisPipelineManager(IDatabase db,string key, RedisOperationConfig config)
         {
             _db = db;
+            _key=key;
             _config = config;
             _batchOperations = new List<Func<IBatch, Task>>();
             _transactionOperations = new List<Func<ITransaction, Task>>();
         }
+        public void AddExpiryOperation(TimeSpan expiry)
+        {
+            AddOperation(batch => batch.KeyExpireAsync(_key, expiry));
+        }
 
+        public void AddExpiryAtOperation(DateTime expiryAt)
+        {
+            AddOperation(batch => batch.KeyExpireAsync(_key, expiryAt));
+        }
+
+        public void AddPersistOperation()
+        {
+            AddOperation(batch => batch.KeyPersistAsync(_key));
+        }
         public void AddOperation(Func<IBatch, Task> batchOperation)
         {
             if (_executed) throw new InvalidOperationException("Pipeline already executed");

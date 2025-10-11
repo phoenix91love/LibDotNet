@@ -14,5 +14,9 @@ namespace Libs.RedisHelper
         public string TimestampProperty { get; set; } = "UpdatedAt";
         public bool AutoExecute { get; set; } = true;
         public int MaxPipelineSize { get; set; } = 1000;
+
+        public TimeSpan? DefaultExpiry { get; set; }
+        public bool SlidingExpiration { get; set; }
+        public string ExpiryTimestampProperty { get; set; } = "ExpiresAt";
     }
 }

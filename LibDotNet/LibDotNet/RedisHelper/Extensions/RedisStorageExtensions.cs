@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StackExchange.Redis;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -101,5 +102,6 @@ namespace Libs.RedisHelper
             throw new NotSupportedException("BulkUpdateProps only supported for Individual storage");
         }
         #endregion
+       
     }
 }

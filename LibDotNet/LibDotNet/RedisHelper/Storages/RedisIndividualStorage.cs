@@ -46,21 +46,40 @@ namespace Libs.RedisHelper
         protected override Task InsertInPipeline(IBatch batch, T item, string itemId)
         {
             ApplyTracking(item);
+            ApplyExpiryTracking(item);
             var fullKey = GetFullKey(itemId);
-            return batch.StringSetAsync(fullKey, Serialize(item));
+            var task = batch.StringSetAsync(fullKey, Serialize(item));
+
+            if (Config.DefaultExpiry.HasValue)
+            {
+                return Task.WhenAll(task, batch.KeyExpireAsync(fullKey, Config.DefaultExpiry.Value));
+            }
+
+            return task;
         }
 
         protected override Task InsertAllInPipeline(IBatch batch, IEnumerable<T> items, Func<T, string> getId)
         {
-            var itemList = items.ToList();
             var tasks = new List<Task>();
+            var itemList = items.ToList();
 
             foreach (var item in itemList)
             {
                 ApplyTracking(item);
+                ApplyExpiryTracking(item);
                 var id = getId?.Invoke(item) ?? GetItemId(item);
                 var fullKey = GetFullKey(id);
-                tasks.Add(batch.StringSetAsync(fullKey, Serialize(item)));
+                var setTask = batch.StringSetAsync(fullKey, Serialize(item));
+
+                if (Config.DefaultExpiry.HasValue)
+                {
+                    var expiryTask = batch.KeyExpireAsync(fullKey, Config.DefaultExpiry.Value);
+                    tasks.Add(Task.WhenAll(setTask, expiryTask));
+                }
+                else
+                {
+                    tasks.Add(setTask);
+                }
             }
 
             return Task.WhenAll(tasks);
@@ -194,6 +213,13 @@ namespace Libs.RedisHelper
         {
             await ExecutePipelineIfNeeded();
             var fullKey = GetFullKey(itemId);
+
+            // ✅ Apply sliding expiry trên GET operations
+            if (Config.SlidingExpiration && Config.DefaultExpiry.HasValue)
+            {
+                await _db.KeyExpireAsync(fullKey, Config.DefaultExpiry.Value);
+            }
+
             var value = await _db.StringGetAsync(fullKey);
             return value.IsNullOrEmpty ? null : Deserialize(value);
         }
